@@ -1,10 +1,11 @@
 import copy
 import random
 import statistics
+from Transaction import Transaction
 
 class AccountList:
-	def __init__(self):
-		self.AccountList = {};
+	def __init__(self, accountList={}):
+		self.AccountList = accountList
 		self.EmptyAccountListEntry = {'NumberOfBlocksSolved':0, 'Balance':0}
 
 	def PopulateAccountList(self, numberOfUsers, rand=False):
@@ -72,19 +73,17 @@ class AccountList:
 				BlocksSolved.append(self.AccountList[accountNumber]['NumberOfBlocksSolved'])
 		return statistics.median(BlocksSolved)
 
-	def ProcessTransaction(self, sendFromAddress, sendToAddress, coins):
+	def ProcessTransaction(self, transaction):
 		'''
 		Processes a transaction from a sender to a receiver
 		Input:
-			sendFromAddress: Address of user who is sending coins
-			sendToAddress: Address of user who is receiving coins
-			coins: Number of coins sender is sending to receiver
+			transaction: Transaction object which contains senderID, receiverID, and coins sent
 		Output:
 			True: If the transaction is carried out successfully
 			False: If there was insufficient funds in the transaction
 		'''
-		if self.RemoveFromBalance(sendFromAddress, coins):
-			self.AddToBalance(sendToAddress, coins)
+		if self.RemoveFromBalance(transaction.senderID, transaction.coins):
+			self.AddToBalance(transaction.receiverID, transaction.coins)
 			return True
 		else:
 			return False

@@ -68,12 +68,12 @@ class TransactionPool:
 				coins = random.random()
 				while coins > self.modifiedAccountList.AccountBalance(fromUser):
 					coins = random.random()
-
-			# Process the transaction on the modifiedAccountList
-			self.modifiedAccountList.ProcessTransaction(fromUser, toUser, coins)
-
+			
 			# Create new transaction
 			newTransaction = Transaction(coins, fromUser, toUser)
+
+			# Process the transaction on the modifiedAccountList
+			self.modifiedAccountList.ProcessTransaction(newTransaction)
 
 			# Append transaction to list of transactions
 			self.Transactions.append(newTransaction)
