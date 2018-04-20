@@ -1,10 +1,12 @@
 from AccountList import AccountList
 from Block import Block
+import copy
 
 class Node:
 	def __init__(self, userID, accountList, masterNodes, transactionPool):
 		self.userID = userID
-		self.AccountList = accountList
+		self.OriginalAccountList = copy.deepcopy(accountList)
+		self.ModifiedAccountList = copy.deepcopy(accountList)
 		self.MasterNodes = masterNodes
 		self.TransactionPool = transactionPool
 
@@ -30,7 +32,7 @@ class Node:
 		'''
 		Adds a new transaction to the block after verification
 		'''
-		if self.AccountList.ProcessTransaction(transaction):
+		if self.ModifiedAccountList.ProcessTransaction(transaction):
 			if not self.Block.AddTransaction(transaction):
 				print("NodeID: " + str(self.userID) + " has detected an attempt to double spend")
 				print("Invalid Sender: " + str(transaction.senderID) + " Amount of coins: " + str(transaction.coins))
