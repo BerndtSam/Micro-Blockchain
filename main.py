@@ -11,16 +11,20 @@ def SplitTransactions():
 	transactionEnd = math.floor(randomInt+1 * len(transactionPool.Transactions))
 	return transactionPool.Transactions[transactionStart:transactionEnd]
 
+NumberOfAccounts = 100
+
+
 # Create initial account list
 masterAccountList = AccountList()
-masterAccountList.PopulateAccountList(10, rand=True)
+masterAccountList.PopulateAccountList(NumberOfAccounts, rand=True)
 print(masterAccountList.AccountList)
 
 # Initialize TransactionPool
 transactionPool = TransactionPool(masterAccountList)
 
 # Generate 100 valid transactions
-transactionPool.GenerateValidTransactions(100)
+transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
+print('Transactions Generated')
 
 # Generate 1% invalid transactions
 #transactionPool.GeneratePercentInvalidTransactions(.01)
@@ -34,14 +38,12 @@ masterNodes = []
 
 # Generate new nodes that contain blocks and process transactions
 nodes = []
-for userID in range(1,6):
-	# Need to split the transaction pool
-	# It may be that the split transaction pool is generating errors because
-	# it was generated with the additional transactions in mind
-	# Update this so the transactions in the pool are independently valid from eachother
+for userID in range(1,NumberOfAccounts+1):
+	# Splitting transaction pool
+	# TODO: Update so the transaction splitting is based off of "location"
 	splitTransactionPool = SplitTransactions()
 	newNode = Node(userID, copy.deepcopy(masterAccountList), copy.deepcopy(masterNodes), copy.deepcopy(splitTransactionPool))
-	newNode = Node(userID, copy.deepcopy(masterAccountList), copy.deepcopy(masterNodes), copy.deepcopy(transactionPool.Transactions))
+	#newNode = Node(userID, copy.deepcopy(masterAccountList), copy.deepcopy(masterNodes), copy.deepcopy(transactionPool.Transactions))
 	nodes.append(newNode)
 
 # need to ensure that transactions that do get processed get removed from transaction
