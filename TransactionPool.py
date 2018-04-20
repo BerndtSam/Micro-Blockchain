@@ -13,6 +13,9 @@ class TransactionPool:
 		# Deep copy of the account list to determine what the outcomes will be
 		# without applying it to the actual account list
 		self.modifiedAccountList = copy.deepcopy(accountList)
+		# Deep copy of the account list to maintain the original balance for 
+		# valid transactions
+		self.originalAccountList = copy.deepcopy(accountList)
 		# Number of users
 		self.numberOfUsers = len(accountList.AccountList)
 	
@@ -35,23 +38,54 @@ class TransactionPool:
 			newTransaction = Transaction(coins, fromUser, toUser)
 			self.Transactions.append(newTransaction)
 
+	def ValidFromUser(self, availableFromUsers):
+		'''
+		Generates a valid from user for a transaction.
+		Valid is defined as not having already been in a transaction this block
+		and not having an empty account
+		Input:
+			availableFromUsers: Accounts who have not been in a transaction this block
+		Output:
+			validUser: Valid user ID for from transaction
+		'''
+		validUser = False
+
+		while validUser != True:
+			# Randomly select a user from list of availableUsers
+			fromUser = availableFromUsers[random.randrange(0, len(availableFromUsers))]
+
+			if not self.modifiedAccountList.AccountIsEmpty(fromUser):
+				validUser = True
+
+		return fromUser
+
+
 	def GenerateValidTransactions(self, numberOfTransactions):
 		'''
-		Generates a set of valid transactions, appends to self.Transactions
+		Generates a set of valid ordered transactions, appends to self.Transactions.
+		Does not allow more than one transaction per block
 		Input:
 			numberOfTransactions: Number of valid transactions to generate
 		'''
+		availableFromUsers = [user for user in range(0,self.numberOfUsers)]
 
 		for i in range(0, numberOfTransactions):
-			fromUser = random.randrange(0, self.numberOfUsers)
-
-			# Insures that the account balance is not empty
-			if self.modifiedAccountList.AccountIsEmpty(fromUser):
-				while self.modifiedAccountList.AccountIsEmpty(fromUser):
-					fromUser = random.randrange(0, self.numberOfUsers)
+			# Generate a valid from user who has not been in a transaction this block
+			# and whose account is not empty
+			fromUser = self.ValidFromUser(availableFromUsers)
+			availableFromUsers.remove(fromUser)
 			
 			# Determines the max amount a user can send
-			maxAmountToSend = math.floor(self.modifiedAccountList.AccountBalance(fromUser))
+			maxAmountToSend = math.floor(self.originalAccountList.AccountBalance(fromUser))
+
+			# Only allow transactions to send up to the senders balance
+			# Sometimes the user will have 0.xxx (else)
+			if maxAmountToSend != 0:
+				coins = random.randrange(0,maxAmountToSend) + random.random()
+			else:
+				coins = random.random()
+				while coins > self.originalAccountList.AccountBalance(fromUser):
+					coins = random.random()
 
 			toUser = random.randrange(0, self.numberOfUsers)
 
@@ -60,15 +94,6 @@ class TransactionPool:
 				while toUser == fromUser:
 					toUser = random.randrange(0, self.numberOfUsers)
 
-			# Only allow transactions to send up to the senders balance
-			# Sometimes the user will have 0.xxx (else)
-			if maxAmountToSend != 0:
-				coins = random.randrange(0,maxAmountToSend) + random.random()
-			else:
-				coins = random.random()
-				while coins > self.modifiedAccountList.AccountBalance(fromUser):
-					coins = random.random()
-			
 			# Create new transaction
 			newTransaction = Transaction(coins, fromUser, toUser)
 
