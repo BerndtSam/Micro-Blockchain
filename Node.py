@@ -3,12 +3,15 @@ from Block import Block
 import copy
 
 class Node:
-	def __init__(self, userID, accountList, masterNodes, transactionPool):
+	def __init__(self, userID, accountList, blocksSolved, transactionPool):
 		self.userID = userID
+		self.BlocksSolved = blocksSolved
 		self.OriginalAccountList = copy.deepcopy(accountList)
 		self.ModifiedAccountList = copy.deepcopy(accountList)
-		self.MasterNodes = masterNodes
+		self.MasterNodes = []
 		self.TransactionPool = transactionPool
+		self.MasterNode = False;
+		self.Nodes = []
 
 		self.InitializeNewBlock()
 		self.ProcessTransactions()
@@ -20,12 +23,16 @@ class Node:
 		Input:
 			transactionPool: New transaction pool
 		'''
+		if self.MasterNode == True:
+			return
 		self.TransactionPool = transactionPool
 
 	def InitializeNewBlock(self):
 		''' 
 		Initializes new block
 		'''
+		if self.MasterNode == True:
+			return
 		self.Block = Block(self.userID)
 
 	def AddTransaction(self, transaction):
@@ -53,6 +60,49 @@ class Node:
 			return None
 
 	def ProcessTransactions(self):
+		'''
+		Processes all transactions for current block from self.TransactionPool
+		'''
+		if self.MasterNode == True:
+			return
+
 		for transactionIndex in range(0,len(self.TransactionPool)):
 			self.AddTransaction(self.TransactionPool[transactionIndex])
+
+	def SetMasterNode(self, masterNode):
+		'''
+		Sets whether this is a masternode or not. If so, sets up appropriate parameters
+		Input:
+			masterNode: Sets if this node is enabled as a masternode
+		'''
+		if masterNode == True:
+			self.MasterNode = True
+		else:
+			self.MasterNode = False
+
+	def IsMasterNode(self):
+		'''
+		Returns if the current node is set to be a masternode
+		Output:
+			self.Masternode
+		'''
+		return self.MasterNode
+
+	def SetMasterNodes(self, masterNodes):
+		'''
+		Sets list of masternodes to given masterNodes
+		Input:
+			masterNodes: List of masterNodes
+		'''
+		self.MasterNodes = masterNodes
+
+	def SetNodes(self, nodes):
+		'''
+		Sets list of nodes to given nodes
+		Input:
+			nodes: List of nodes
+		'''
+		self.Nodes = nodes
+
+
 
