@@ -18,7 +18,7 @@ class AccountList:
 		for i in range(0,numberOfUsers):
 			if rand == True:
 				self.AccountList[i] = copy.deepcopy(self.EmptyAccountListEntry)
-				if random.random() > 0.75:
+				if random.random() > 0.5:
 					self.AccountList[i]['NumberOfBlocksSolved'] = random.randrange(0, 101)
 				else:
 					self.AccountList[i]['NumberOfBlocksSolved'] = 0
