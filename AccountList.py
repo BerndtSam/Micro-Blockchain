@@ -111,17 +111,3 @@ class AccountList:
 			return balance of account address
 		'''
 		return self.AccountList[address]['Balance']
-
-
-# x = AccountList()
-# x.PopulateAccountList(10)
-# print(x.AccountList)
-# x.AddToBalance(0,10)
-# print(x.AccountList)
-# x.RemoveFromBalance(0,5)
-# print(x.AccountList)
-# print(x.ProcessTransaction(0,1,2.5151))
-# print(x.AccountList)
-# print(x.ProcessTransaction(0,1,2.5151))
-# print(x.AccountList)
-# print(x.MedianBlocksSolved())
