@@ -22,7 +22,8 @@ def BeginMasterNodeSelection():
 		#masterNode.MasternodeSelection()
 
 NumberOfAccounts = 100
-
+MicroBlocksPerBlock = 3
+MaxTimePerMicroBlock = 3
 
 # Create initial account list
 masterAccountList = AccountList()
@@ -48,7 +49,7 @@ masterNodes = []
 for masterNodeID in range(0,math.floor(NumberOfAccounts/10)):
 	tempTransactions = []
 	nodeBlocksSolved = masterAccountList.AccountList[masterNodeID]['NumberOfBlocksSolved']
-	tempMasterNode = MasterNode(masterNodeID, copy.deepcopy(masterAccountList), nodeBlocksSolved, transactionPool=[], previousMasterNodeList=[])
+	tempMasterNode = MasterNode(masterNodeID, copy.deepcopy(masterAccountList), nodeBlocksSolved, MicroBlocksPerBlock, MaxTimePerMicroBlock, transactionPool=[], previousMasterNodeList=[])
 	masterNodes.append(tempMasterNode)
 
 
@@ -59,7 +60,7 @@ for userID in range(1,NumberOfAccounts):
 	# TODO: Update so the transaction splitting is based off of "location"
 	splitTransactionPool = SplitTransactions()
 	nodeBlocksSolved = masterAccountList.AccountList[userID]['NumberOfBlocksSolved']
-	newNode = Node(userID, copy.deepcopy(masterAccountList), nodeBlocksSolved, copy.deepcopy(splitTransactionPool))
+	newNode = Node(userID, copy.deepcopy(masterAccountList), nodeBlocksSolved, copy.deepcopy(splitTransactionPool), MicroBlocksPerBlock, MaxTimePerMicroBlock)
 	#newNode = Node(userID, copy.deepcopy(masterAccountList), copy.deepcopy(masterNodes), copy.deepcopy(transactionPool.Transactions))
 	nodes.append(newNode)
 
@@ -84,7 +85,7 @@ for masterNode in masterNodes:
 	masterNode.SetNodes(nodes)
 
 # After all blocks are solved, beings master node selection process via threads
-AllBlocksSolved = Timer(16, BeginMasterNodeSelection)
+AllBlocksSolved = Timer(25, BeginMasterNodeSelection)
 AllBlocksSolved.start()
 
 

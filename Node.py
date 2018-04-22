@@ -1,20 +1,31 @@
 from AccountList import AccountList
 from Block import Block
+from threading import Timer
+import threading
+import random
 import copy
+import math
 
 class Node:
-	def __init__(self, userID, accountList, blocksSolved, transactionPool):
+	def __init__(self, userID, accountList, blocksSolved, transactionPool, microBlocksPerBlock, maxTimePerMicroBlock):
 		self.userID = userID
 		self.BlocksSolved = blocksSolved
 		self.OriginalAccountList = copy.deepcopy(accountList)
 		self.ModifiedAccountList = copy.deepcopy(accountList)
 		self.MasterNodes = []
 		self.TransactionPool = transactionPool
-		self.MasterNode = False;
+		self.MasterNode = False
+		self.NextBlockReady = False
 		self.Nodes = []
+		self.MicroBlocksPerBlock = microBlocksPerBlock
+		self.MaxTimePerMicroBlock = maxTimePerMicroBlock
+		self.Block = None
 
 		self.InitializeNewBlock()
-		self.ProcessTransactions()
+		#self.ProcessTransactions()
+		self.TransactionThread = threading.Thread(target=self.ProcessTransactions)
+		self.TransactionThread.start()
+		#self.ProcessTransactions()
 
 
 	def UpdateTransactionPool(self, transactionPool):
@@ -33,7 +44,7 @@ class Node:
 		'''
 		if self.MasterNode == True:
 			return
-		self.Block = Block(self.userID)
+		self.Block = Block(self.userID, self.MicroBlocksPerBlock, self.MaxTimePerMicroBlock)
 
 	def AddTransaction(self, transaction):
 		'''
@@ -66,8 +77,21 @@ class Node:
 		if self.MasterNode == True:
 			return
 
-		for transactionIndex in range(0,len(self.TransactionPool)):
-			self.AddTransaction(self.TransactionPool[transactionIndex])
+		# Need to break up set of transactions so that all microblocks can hold transactions
+		TransactionSplitIndex = float(len(self.TransactionPool))/float(self.MicroBlocksPerBlock)
+		for microBlock in range(0, self.MicroBlocksPerBlock):
+			for transactionIndex in range(math.floor(TransactionSplitIndex*microBlock),math.floor(TransactionSplitIndex*(microBlock+1))):
+				self.AddTransaction(self.TransactionPool[transactionIndex])
+			
+			# Ensures all transactions are processed in case of floor rounding error
+			if microBlock == self.MicroBlocksPerBlock-1:
+				for transactionIndex in range(math.floor(TransactionSplitIndex*(microBlock+1)), len(self.TransactionPool)):
+					self.AddTransaction(self.TransactionPool[transactionIndex])
+
+			# Makes it so each microblock will contain transactions (waits for new microblock to be ready before continuing)
+			while self.Block.CheckMicroBlockStatus() != True:
+				continue
+
 
 	def SetMasterNode(self, masterNode):
 		'''
@@ -103,6 +127,13 @@ class Node:
 			nodes: List of nodes
 		'''
 		self.Nodes = nodes
+
+	def WaitForTransactionProcessing(self):
+		'''
+		Allows transactions to be processed at separate times without halting machine
+		'''
+		self.NextBlockReady = True
+		return
 
 
 

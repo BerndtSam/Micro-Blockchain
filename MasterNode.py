@@ -3,8 +3,8 @@ import random
 import copy
 
 class MasterNode(Node):
-	def __init__(self, userID, accountList, blocksSolved, transactionPool, previousMasterNodeList):
-		super(MasterNode, self).__init__(userID, accountList, blocksSolved, transactionPool)
+	def __init__(self, userID, accountList, blocksSolved, microBlocksPerBlock, maxTimePerMicroBlock, transactionPool, previousMasterNodeList):
+		super(MasterNode, self).__init__(userID, accountList, blocksSolved, transactionPool, microBlocksPerBlock, maxTimePerMicroBlock)
 		super(MasterNode, self).SetMasterNode(True)
 		self.PreviousMasterNodeList = previousMasterNodeList
 		self.ReplacementMasterNode = None
@@ -54,6 +54,15 @@ class MasterNode(Node):
 	def MasternodeSelection(self):
 		'''
 		Handles the entire masternode selection process
+		# Selection happens after end of block iteration
+		# User must have greater or equal to the median number of blocks solved to be masternode
+		# Receives accountlist, new masternode list
+		# Sends announce to each node saying its the new masternode
+		# Send account list to each masternode and does quorum to verify
+		#TODO: If masternode does not have same accountlist, gets dropped
+		#TODO: Must ping every 15 seconds
+		#TODO: must respond to pings
+
 		'''
 		# Selects replacement masternodes in threaded process
 		self.SelectReplacementMasterNode()
@@ -95,6 +104,7 @@ class MasterNode(Node):
 			# Sets this node to be a regular node again
 			if node.userID == self.userID:
 				node.SetMasterNode(False)
+				print("MasterNodeID: " + str(self.userID) + " is relinquishing its control as a MasterNode to: " + str(self.ReplacementMasterNode))
 				break
 
 		for node in self.Nodes:
@@ -125,16 +135,7 @@ class MasterNode(Node):
 
 
 
-	# Selection
-	# Selection happens after end of block iteration
-	# User must have greater or equal to the median number of blocks solved to be masternode
-	# Receives accountlist, new masternode list
-	# Sends announce to each node saying its the new masternode
-	# Send account list to each masternode and does quorum to verify
-	# If masternode deos not have same accountlist, gets dropped
-	# Must ping every 15 seconds
-	# must respond to pings
-
+	
 	# Block processing
 	# does not mine this or next block
 	# Takes in Blocks from Nodes
