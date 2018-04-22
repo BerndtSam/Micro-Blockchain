@@ -128,12 +128,6 @@ class Node:
 		'''
 		self.Nodes = nodes
 
-	def WaitForTransactionProcessing(self):
-		'''
-		Allows transactions to be processed at separate times without halting machine
-		'''
-		self.NextBlockReady = True
-		return
 
 
 
