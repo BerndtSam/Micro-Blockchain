@@ -13,7 +13,7 @@ class Node:
 		self.OriginalAccountList = copy.deepcopy(accountList)
 		self.ModifiedAccountList = copy.deepcopy(accountList)
 		self.MasterNodes = []
-		self.TransactionPool = transactionPool
+		self.TransactionPool = None
 		self.MasterNode = False
 		self.NextBlockReady = False
 		self.Nodes = []
@@ -29,7 +29,8 @@ class Node:
 		#self.ProcessBlockThread = threading.Thread(target=self.ForwardSolvedBlockToMasterNodes)
 		#self.ProcessBlockThread.start()
 
-	def BeginBlockBuilding(self):
+	def BeginBlockBuilding(self, transactionPool):
+		self.TransactionPool = transactionPool
 		if self.MasterNode == True:
 			return
 

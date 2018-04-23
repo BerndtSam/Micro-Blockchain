@@ -20,6 +20,8 @@ class MasterNode(Node):
 		self.Census = None
 		self.CensusComplete = False
 		self.CensusInitiated = False
+		self.CensusVerified = False
+		self.CensusMergeComplete = False
 		self.VerifiedCensus = []
 
 
@@ -138,6 +140,18 @@ class MasterNode(Node):
 				self.BlocksSolved = node.BlocksSolved
 				self.OriginalMasterAccountList = copy.deepcopy(self.ModifiedMasterAccountList)
 				self.ModifiedMasterAccountList = copy.deepcopy(self.ModifiedMasterAccountList)
+
+
+				self.SelfVerifiedBlocks = []
+				self.VerifiedBlocks = []
+				self.VerifiedBlockCount = {}
+				self.Census = None
+				self.CensusComplete = False
+				self.CensusInitiated = False
+				self.CensusVerified = False
+				self.CensusMergeComplete = False
+				self.VerifiedCensus = []
+
 
 				print("MasterNodeID: " + str(self.userID) + " initialized as a new MasterNode")
 				break
@@ -260,6 +274,30 @@ class MasterNode(Node):
 		for masterNode in self.MasterNodes:
 			masterNode.CompareCensus(self.userID, self.Census)
 
+		while not self.CensusVerified:
+			continue
+
+
+		self.InitiateFinalAccountListMerge()
+
+	def InitiateFinalAccountListMerge(self):
+		mergeReady = 0
+		while mergeReady != len(self.MasterNodes):
+			mergeReady = 0
+			for masterNode in self.MasterNodes:
+				if masterNode.CensusComplete == True:
+					mergeReady += 1
+		self.MergeCensusIntoAccountList()
+
+		mergeReady = 0
+		while mergeReady != len(self.MasterNodes):
+			mergeReady = 0
+			for masterNode in self.MasterNodes:
+				if masterNode.CensusMergeComplete == True:
+					mergeReady += 1
+		self.FinalizeAccountList()
+
+
 	def CompareCensus(self, masterNodeID, census):
 		'''
 		Compares this masternodes census against another masternodes census.
@@ -278,8 +316,8 @@ class MasterNode(Node):
 			self.VerifiedCensus.append(masterNodeID)
 
 		if len(self.VerifiedCensus) > self.Quorum():
-			print('Census validated by:' + str(self.userID))
-
+			#print('Census validated by:' + str(self.userID))
+			self.CensusVerified = True
 
 
 	def PerformCensus(self):
@@ -350,6 +388,24 @@ class MasterNode(Node):
 
 		return True
 
+
+	def MergeCensusIntoAccountList(self):
+		'''
+		Merge the now verified census into the account list
+		'''
+		for userid in self.Census:
+			self.ModifiedMasterAccountList.AccountList[userid]['Balance'] += self.Census[userid]['Balance']
+		print('MasterNode: ' + str(self.userID) + ' has merged the census')
+		self.CensusMergeComplete = True
+
+	def FinalizeAccountList(self):
+		for masterNode in self.MasterNodes:
+			for userid in masterNode.ModifiedMasterAccountList.AccountList:
+				if masterNode.ModifiedMasterAccountList.AccountList[userid] != self.ModifiedMasterAccountList.AccountList[userid]:
+					print('Masternode ' + str(self.userID) + 'has detected a flaw in the account list of Masternode ' + str(masterNode.userID))
+		print('Account List Verified for Masternode ' + str(self.userID))
+		Timer(10, self.MasternodeSelection())
+		#self.MasternodeSelection()
 	# Census applied to account list
 	# Quorum proceedure for accountlist ot define master accountlist
 

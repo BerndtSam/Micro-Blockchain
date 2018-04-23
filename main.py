@@ -22,12 +22,6 @@ def BeginMasterNodeSelection():
 		threading.Thread(target=masterNode.MasternodeSelection).start()
 		#masterNode.MasternodeSelection()
 
-def testing():
-	# After blocks are solved, attempts to initialize new masternodes
-	for masterNode in masterNodes:
-		for block in masterNode.VerifiedBlocks:
-			print(str(block.BlockID))
-
 
 NumberOfAccounts = 100
 MicroBlocksPerBlock = 3
@@ -95,32 +89,31 @@ for node in nodes:
 for masterNode in masterNodes:
 	masterNode.SetNodes(nodes)
 
-for node in nodes:
-	node.BeginBlockBuilding()
 
-'''waitList = []
-# Begins Processing Blocks
-for node in nodes:
-	waitList.append(threading.Thread(target=node.BeginBlockBuilding))
-	#node.BeginBlockBuilding
-
-for thread in waitList:
-	thread.start()
-
-for thread in waitList:
-	thread.join()
+#for node in nodes:
+	#splitTransactionPool = SplitTransactions()
+	#node.BeginBlockBuilding(splitTransactionPool)
 
 
-for node in nodes:
-	#node.TransactionThread.join()
-	node.ForwardSolvedBlockToMasterNodes()'''
+
+for i in range(0,3):
+	# Initialize TransactionPool
+	transactionPool = TransactionPool(copy.deepcopy(masterNodes[0].ModifiedMasterAccountList))
+
+	# Generate 100 valid transactions
+	transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
+
+
+	for node in nodes:
+		splitTransactionPool = SplitTransactions()
+		node.BeginBlockBuilding(splitTransactionPool)
+
+
 
 # After all blocks are solved, beings master node selection process via threads
-AllBlocksSolved = Timer(25, BeginMasterNodeSelection)
-AllBlocksSolved.start()
+#AllBlocksSolved = Timer(25, BeginMasterNodeSelection)
+#AllBlocksSolved.start()
 	
-Testing = Timer(30, testing)
-Testing.start()
 
 
 #print(len(nodes))
