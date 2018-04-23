@@ -47,7 +47,7 @@ class MicroBlock:
 		Sets the microblock to solved
 		'''
 		self.Solved = True
-		print("MicroBlock " + str(self.MicroBlockID) + " solved by: " + str(self.BlockID))
+		#print("MicroBlock " + str(self.MicroBlockID) + " solved by: " + str(self.BlockID))
 
 	def IsSolved(self):
 		'''

@@ -3,6 +3,7 @@ from TransactionPool import TransactionPool
 from Node import Node
 from MasterNode import MasterNode
 from threading import Timer
+from Block import Block
 import threading
 
 import copy
@@ -21,6 +22,13 @@ def BeginMasterNodeSelection():
 		threading.Thread(target=masterNode.MasternodeSelection).start()
 		#masterNode.MasternodeSelection()
 
+def testing():
+	# After blocks are solved, attempts to initialize new masternodes
+	for masterNode in masterNodes:
+		for block in masterNode.VerifiedBlocks:
+			print(str(block.BlockID))
+
+
 NumberOfAccounts = 100
 MicroBlocksPerBlock = 3
 MaxTimePerMicroBlock = 3
@@ -38,7 +46,7 @@ transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
 print('Transactions Generated')
 
 # Generate 1% invalid transactions
-#transactionPool.GeneratePercentInvalidTransactions(.01)
+#transactionPool.GeneratePercentInvalidTransactions(.05)
 
 # Processes transactions
 # for transaction in transactionPool.Transactions:
@@ -55,7 +63,7 @@ for masterNodeID in range(0,math.floor(NumberOfAccounts/10)):
 
 # Generate new nodes that contain blocks and process transactions
 nodes = []
-for userID in range(1,NumberOfAccounts):
+for userID in range(0,NumberOfAccounts):
 	# Splitting transaction pool
 	# TODO: Update so the transaction splitting is based off of "location"
 	splitTransactionPool = SplitTransactions()
@@ -63,6 +71,7 @@ for userID in range(1,NumberOfAccounts):
 	newNode = Node(userID, copy.deepcopy(masterAccountList), nodeBlocksSolved, copy.deepcopy(splitTransactionPool), MicroBlocksPerBlock, MaxTimePerMicroBlock)
 	#newNode = Node(userID, copy.deepcopy(masterAccountList), copy.deepcopy(masterNodes), copy.deepcopy(transactionPool.Transactions))
 	nodes.append(newNode)
+
 
 # Tells each masternode what the other masternode objects are
 # Records the IDs of masternodes
@@ -72,9 +81,11 @@ for masterNode in masterNodes:
 	masterNodeIDs.append(masterNode.userID)
 
 # Initially tells the nodes which are masternodes that they are masternodes (so they don't process transactions, etc.)
+# Assigns the masternode list to nodes
 for node in nodes:
 	if node.userID in masterNodeIDs:
 		node.SetMasterNode(True)
+	node.SetMasterNodes(masterNodes)
 
 # Tells each node what the other node objects are
 for node in nodes:
@@ -84,9 +95,40 @@ for node in nodes:
 for masterNode in masterNodes:
 	masterNode.SetNodes(nodes)
 
+for node in nodes:
+	node.BeginBlockBuilding()
+
+'''waitList = []
+# Begins Processing Blocks
+for node in nodes:
+	waitList.append(threading.Thread(target=node.BeginBlockBuilding))
+	#node.BeginBlockBuilding
+
+for thread in waitList:
+	thread.start()
+
+for thread in waitList:
+	thread.join()
+
+
+for node in nodes:
+	#node.TransactionThread.join()
+	node.ForwardSolvedBlockToMasterNodes()'''
+
 # After all blocks are solved, beings master node selection process via threads
 AllBlocksSolved = Timer(25, BeginMasterNodeSelection)
 AllBlocksSolved.start()
+	
+Testing = Timer(30, testing)
+Testing.start()
+
+
+#print(len(nodes))
+	#for node in nodes:
+	#	node.ForwardSolvedBlockToMasterNodes()
+
+
+
 
 
 

@@ -20,12 +20,27 @@ class Node:
 		self.MicroBlocksPerBlock = microBlocksPerBlock
 		self.MaxTimePerMicroBlock = maxTimePerMicroBlock
 		self.Block = None
+		self.TransactionThread = None
+
+		#self.InitializeNewBlock()
+		#self.InitializeNewBlock()
+		#self.TransactionThread = threading.Thread(target=self.ProcessTransactions)
+		#self.TransactionThread.start()
+		#self.ProcessBlockThread = threading.Thread(target=self.ForwardSolvedBlockToMasterNodes)
+		#self.ProcessBlockThread.start()
+
+	def BeginBlockBuilding(self):
+		if self.MasterNode == True:
+			return
 
 		self.InitializeNewBlock()
-		#self.ProcessTransactions()
+
 		self.TransactionThread = threading.Thread(target=self.ProcessTransactions)
 		self.TransactionThread.start()
-		#self.ProcessTransactions()
+		
+		#self.ForwardSolvedBlockToMasterNodes()
+		#self.ProcessBlockThread = threading.Thread(target=self.ForwardSolvedBlockToMasterNodes)
+		#self.ProcessBlockThread.start()
 
 
 	def UpdateTransactionPool(self, transactionPool):
@@ -92,6 +107,7 @@ class Node:
 			while self.Block.CheckMicroBlockStatus() != True:
 				continue
 
+		self.ForwardSolvedBlockToMasterNodes()
 
 	def SetMasterNode(self, masterNode):
 		'''
@@ -128,6 +144,13 @@ class Node:
 		'''
 		self.Nodes = nodes
 
+	def ForwardSolvedBlockToMasterNodes(self):
+		'''
+		Forwards the solved block to all master nodes
+		'''
+		if self.Block.IsSolved():
+			for masterNode in self.MasterNodes:
+				masterNode.ProcessIncomingBlocks(self.Block, self.OriginalAccountList, self.ModifiedAccountList)
 
 
 

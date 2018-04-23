@@ -59,7 +59,7 @@ class Block:
         Sets the block to solved
         '''
         self.Solved = True;
-        print("Block solved by: " + str(self.BlockID))
+        #print("Block solved by: " + str(self.BlockID))
 
     def IsSolved(self):
         '''

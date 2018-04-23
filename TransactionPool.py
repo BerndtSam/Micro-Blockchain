@@ -101,7 +101,7 @@ class TransactionPool:
 			self.modifiedAccountList.ProcessTransaction(newTransaction)
 
 			# Append transaction to list of transactions
-			self.Transactions.append(newTransaction)
+			self.Transactions.append(copy.deepcopy(newTransaction))
 
 	def GeneratePercentInvalidTransactions(self, percent=0.05):
 		'''
