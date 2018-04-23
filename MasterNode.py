@@ -1,4 +1,5 @@
 from Node import Node
+from threading import Timer
 import random
 import copy
 import math
@@ -16,6 +17,11 @@ class MasterNode(Node):
 		self.VerifiedBlockCount = {}
 		self.OriginalMasterAccountList = copy.deepcopy(accountList)
 		self.ModifiedMasterAccountList = copy.deepcopy(accountList)
+		self.Census = None
+		self.CensusComplete = False
+		self.CensusInitiated = False
+		self.VerifiedCensus = []
+
 
 	def SetCurrentMasterNodeIDs(self):
 		'''
@@ -153,6 +159,69 @@ class MasterNode(Node):
 					# Send block to each masternode to verify
 					masterNode.VerifyBlockFromMasterNode(block, originalAccountList, modifiedAccountList)
 
+		if len(self.VerifiedBlocks) == 5 and self.CensusInitiated == False:
+			self.CensusInitiated = True
+			
+			# Wait for the rest of the masternodes to catch up
+			fullyVerified = 0
+			while fullyVerified < len(self.MasterNodes):
+				fullyVerified = 0
+				for masterNode in self.MasterNodes:
+					if len(masterNode.VerifiedBlocks) == 5 and masterNode.CensusInitiated == True:
+						fullyVerified += 1
+
+			self.MergeVerifiedBlocks()			
+
+
+			Timer(5, self.InitiateCensus).start()
+			#self.InitiateCensus()
+
+
+	def MergeVerifiedBlocks(self):
+		'''
+		In the case not all masternodes agree on blocks, this finds the most frequently agreed and sets all
+		masternodes verified blocks to match
+		TODO: Clean this up a bit
+		'''
+		
+		# Number of masternodes with this block
+		compiledBlocks = {}
+		# Blocks themselves
+		compiledBlockList = []
+
+		# Runs through verified blocks, counting the number of times a block shows up
+		for masterNode in self.MasterNodes:
+			for verifiedBlock in masterNode.VerifiedBlocks:
+				try:
+					compiledBlocks[verifiedBlock.BlockID] += 1
+				except:
+					compiledBlocks[verifiedBlock.BlockID] = 0
+
+				# Grabs the verified block if it hasn't already shown up
+				if verifiedBlock.BlockID not in compiledBlocks:
+					compiledBlockList.append(verifiedBlock)
+		
+		# Finds the most frequently occuring blocks out of the verified blocks
+		maxFive = []
+		while len(maxFive) < 5:
+			maxItem = 0
+			maxBlock = None 
+			for blockID in compiledBlocks:
+				if maxItem < compiledBlocks[blockID] and blockID not in maxFive:
+					maxItem = compiledBlocks[blockID]
+					maxBlock = blockID
+			maxFive.append(maxBlock)
+
+		# Compiles top five blocks
+		VerifiedBlocks = []
+		for block in compiledBlockList:
+			if block.BlockID in maxFive and block not in VerifiedBlocks:
+				VerifiedBlocks.append(block)
+
+		# Assigns each masternode these 5 blocks
+		for masterNode in self.MasterNodes:
+			masterNode.VerifiedBlocks = VerifiedBlocks
+
 	def VerifyBlockFromMasterNode(self, block, originalAccountList, modifiedAccountList):
 		'''
 		If a masternode receives a valid block, it will send it to the other masternodes via this function
@@ -178,6 +247,54 @@ class MasterNode(Node):
 			return True
 
 
+	def InitiateCensus(self):
+		'''
+		Once all masternodes agree on the verified blocks, census gets initiated
+		This masternode will complete the census, and then will have all other masternodes complete the census
+		After all masternodes have completed the census, compares against eachother
+		'''
+		print('Census Initiated by: ' + str(self.userID))
+		self.PerformCensus()
+		for masterNode in self.MasterNodes:
+			masterNode.PerformCensus()
+		for masterNode in self.MasterNodes:
+			masterNode.CompareCensus(self.userID, self.Census)
+
+	def CompareCensus(self, masterNodeID, census):
+		'''
+		Compares this masternodes census against another masternodes census.
+		Input:
+			masterNodeID: ID of masternode the census was received from
+			census: Census from masternode to compare against own
+		'''
+		valid = True
+		# Validates that the census values are valid
+		for userid in census:
+			if census[userid]['Balance'] != self.Census[userid]['Balance']:
+				print("Invalid census received from Masternode: " + str(masterNodeID))
+				valid = False
+				break
+		if valid == True:
+			self.VerifiedCensus.append(masterNodeID)
+
+		if len(self.VerifiedCensus) > self.Quorum():
+			print('Census validated by:' + str(self.userID))
+
+
+
+	def PerformCensus(self):
+		'''
+		Performs the census if it hasn't already been completed by going through the verified blocks
+		and adding up all additions and subtractions from receivers and senders respectively
+		'''
+		if not self.CensusComplete:
+			self.Census = self.OriginalMasterAccountList.EmptyAccountList()
+			for block in self.VerifiedBlocks:
+				for microblock in block.MicroBlocks:
+					for transaction in microblock.TransactionList:
+						self.Census[transaction.senderID]['Balance'] -= transaction.coins
+						self.Census[transaction.receiverID]['Balance'] += transaction.coins
+			self.CensusComplete = True
 
 	def AddToVerifiedBlockList(self, block):
 		'''
@@ -232,13 +349,6 @@ class MasterNode(Node):
 				return False
 
 		return True
-
-	# Once recieves 5 verified blocks
-	# Does Census
-	# Census: zeroed out account list
-	# Verifies the outcome values of 5 blocks
-	# Send to each masternode
-	# Follow quorum proceedure
 
 	# Census applied to account list
 	# Quorum proceedure for accountlist ot define master accountlist

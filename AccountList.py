@@ -8,6 +8,18 @@ class AccountList:
 		self.AccountList = accountList
 		self.EmptyAccountListEntry = {'NumberOfBlocksSolved':0, 'Balance':0}
 
+	def EmptyAccountList(self):
+		'''
+		Creates an empty copy of the account list
+		Output:
+			emptyAccounts: Account list with 0 balance for all users
+		'''
+		emptyAccounts = copy.deepcopy(self.AccountList)
+		for account in emptyAccounts:
+			emptyAccounts[account]['Balance'] = 0
+		return emptyAccounts
+
+
 	def PopulateAccountList(self, numberOfUsers, rand=False):
 		'''
 		Populates the account list with either empty or random values
