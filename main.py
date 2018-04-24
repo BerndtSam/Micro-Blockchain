@@ -11,7 +11,7 @@ import random
 import math
 
 def SplitTransactions(transaction_pool):
-	randomInt = random.randint(0,4)/5
+	randomInt = random.randint(0,2)/3
 	transactionStart = math.floor(randomInt * len(transaction_pool.Transactions))
 	transactionEnd = math.floor(randomInt+1 * len(transaction_pool.Transactions))
 	return transaction_pool.Transactions[transactionStart:transactionEnd]
@@ -104,7 +104,7 @@ for i in range(0,BlockIterations):
 
 	# Begins node processing transactions and inserting into blocks
 	for node in nodes:
-		splitTransactionPool = SplitTransactions(transactionPool)
+		splitTransactionPool = SplitTransactions(copy.deepcopy(transactionPool))
 		nodeThread = threading.Thread(target=node.BeginBlockBuilding, args=[copy.deepcopy(splitTransactionPool)])
 		nodeThread.start()
 		nodeThreads.append(nodeThread)
@@ -116,6 +116,19 @@ for i in range(0,BlockIterations):
 		masterNodeThread.join()
 
 	masterAccountList.AccountList = copy.deepcopy(masterNodes[0].ModifiedMasterAccountList.AccountList)
+	
+
+	'''processed = 0
+	unprocessed = 0
+
+	for processedTransaction in processedTransactions:
+		if processedTransaction.processed:
+			processed += 1
+		else:
+			unprocessed += 1
+	print("Total Processed Transactions: " + str(processed))
+	print("Total Unprocessed Transactions: " + str(unprocessed))'''
+
 
 	# Update each nodes account list
 	for node in nodes:

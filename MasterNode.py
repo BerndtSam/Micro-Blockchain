@@ -22,6 +22,8 @@ class MasterNode(Node):
 		self.VerifiedBlocks = []
 		self.VerifiedBlockCount = {}
 
+		self.ProcessedTransactions = []
+
 		self.Census = None
 		self.CensusComplete = False
 		self.CensusInitiated = False
@@ -183,6 +185,8 @@ class MasterNode(Node):
 		self.BlocksToVerify = []
 		self.OriginalAccountListsToVerify = []
 		self.ModifiedAccountListsToVerify = []
+
+		self.ProcessedTransactions = []
 
 
 	def ReceiveIncomingBlocks(self, block, originalAccountList, modifiedAccountList):
@@ -432,7 +436,8 @@ class MasterNode(Node):
 					for transaction in microblock.TransactionList:
 						# Ensures no duplicates
 						if transaction not in processedTransactions:
-							processedTransactions.append(transaction)
+							transaction.processed = True
+							processedTransactions.append(copy.deepcopy(transaction))
 							self.Census[transaction.senderID]['Balance'] -= transaction.coins
 							self.Census[transaction.receiverID]['Balance'] += transaction.coins
 				# Increment number of blocks solved for each block
