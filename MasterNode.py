@@ -170,6 +170,14 @@ class MasterNode(Node):
 				break
 
 	def ReceiveIncomingBlocks(self, block, originalAccountList, modifiedAccountList):
+		'''
+		Nodes will call this function to have the masternode begin processing the blocks. 
+		Ends the nodes which calls this function's thread.
+		Input:
+			block: Block to process
+			originalAccountList: Original Account List to verify
+			modifiedAccountList: Modified Account List to verify
+		'''
 		self.AddBlockLock.acquire()
 		self.BlocksToVerify.append(block)
 		self.OriginalAccountListsToVerify.append(originalAccountList)
@@ -180,12 +188,9 @@ class MasterNode(Node):
 
 	def ProcessIncomingBlocks(self):
 		'''
-		If a node solves a block, it is sent to this function for the masternode to verify
-		MasterNode will verify the block itself, then send it to the other masternodes to verify
-		Input:
-			block: Solved block
-			originalAccountList: Original account list to verify against
-			modifiedAccountList: Account list after transactions to verify against
+		If a node solves a block, it will update the BlocksToVerify * list, which will be iterated in
+		this function. This function will then loop through and verify the blocks first, and then
+		with the other masternodes. If 5 blocks are verified, begins census
 		'''
 
 		# Have this loop to go through received blocks and process them. Add to verified blocks if need be
