@@ -67,6 +67,7 @@ class TransactionPool:
 		Input:
 			numberOfTransactions: Number of valid transactions to generate
 		'''
+		print('Generating valid Transactions')
 		availableFromUsers = [user for user in range(0,self.numberOfUsers)]
 
 		for i in range(0, numberOfTransactions):
@@ -81,7 +82,10 @@ class TransactionPool:
 			# Only allow transactions to send up to the senders balance
 			# Sometimes the user will have 0.xxx (else)
 			if maxAmountToSend != 0:
-				coins = random.randrange(0,maxAmountToSend) + random.random()
+				try:
+					coins = random.randrange(0,maxAmountToSend) + random.random()
+				except:
+					print(str(maxAmountToSend))
 			else:
 				coins = random.random()
 				while coins > self.originalAccountList.AccountBalance(fromUser):

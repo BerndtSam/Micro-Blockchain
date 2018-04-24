@@ -7,7 +7,7 @@ import copy
 import math
 
 class Node:
-	def __init__(self, userID, accountList, blocksSolved, transactionPool, microBlocksPerBlock, maxTimePerMicroBlock):
+	def __init__(self, userID, accountList, blocksSolved, microBlocksPerBlock, maxTimePerMicroBlock):
 		self.userID = userID
 		self.BlocksSolved = blocksSolved
 		self.OriginalAccountList = copy.deepcopy(accountList)
@@ -20,16 +20,10 @@ class Node:
 		self.MicroBlocksPerBlock = microBlocksPerBlock
 		self.MaxTimePerMicroBlock = maxTimePerMicroBlock
 		self.Block = None
-		self.TransactionThread = None
 
-		#self.InitializeNewBlock()
-		#self.InitializeNewBlock()
-		#self.TransactionThread = threading.Thread(target=self.ProcessTransactions)
-		#self.TransactionThread.start()
-		#self.ProcessBlockThread = threading.Thread(target=self.ForwardSolvedBlockToMasterNodes)
-		#self.ProcessBlockThread.start()
 
 	def BeginBlockBuilding(self, transactionPool):
+
 		self.TransactionPool = transactionPool
 		if self.MasterNode == True:
 			return
@@ -38,13 +32,7 @@ class Node:
 
 		self.ProcessTransactions()
 
-		#self.TransactionThread = threading.Thread(target=self.ProcessTransactions)
-		#self.TransactionThread.start()
-		
-		#self.ForwardSolvedBlockToMasterNodes()
-		#self.ProcessBlockThread = threading.Thread(target=self.ForwardSolvedBlockToMasterNodes)
-		#self.ProcessBlockThread.start()
-
+		return 
 
 	def UpdateTransactionPool(self, transactionPool):
 		'''
@@ -75,6 +63,7 @@ class Node:
 		else:
 			print("NodeID: " + str(self.userID) + " has rejected an invalid transaction.")
 			print("Invalid sender: " + str(transaction.senderID) + " Amount of coins: " + str(transaction.coins))
+			print(self.ModifiedAccountList.AccountList)
 
 	def BlockSolved(self):
 		'''
@@ -155,5 +144,8 @@ class Node:
 			for masterNode in self.MasterNodes:
 				masterNode.ReceiveIncomingBlocks(self.Block, self.OriginalAccountList, self.ModifiedAccountList)
 
+	def ReinitializeNode(self):
+		self.TransactionPool = None
+		self.NextBlockReady = False
 
 

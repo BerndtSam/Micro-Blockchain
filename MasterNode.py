@@ -7,17 +7,21 @@ import math
 
 class MasterNode(Node):
 	def __init__(self, userID, accountList, blocksSolved, microBlocksPerBlock, maxTimePerMicroBlock, transactionPool, previousMasterNodeList):
-		super(MasterNode, self).__init__(userID, accountList, blocksSolved, transactionPool, microBlocksPerBlock, maxTimePerMicroBlock)
+		super(MasterNode, self).__init__(userID, accountList, blocksSolved, microBlocksPerBlock, maxTimePerMicroBlock)
 		super(MasterNode, self).SetMasterNode(True)
+		
+		self.OriginalMasterAccountList = copy.deepcopy(accountList)
+		self.ModifiedMasterAccountList = copy.deepcopy(accountList)
+
 		self.PreviousMasterNodeList = previousMasterNodeList
 		self.ReplacementMasterNode = None
 		self.SelectedMasterNodes = []
 		self.CurrentMasterNodeIDs = []
+		
 		self.SelfVerifiedBlocks = []
 		self.VerifiedBlocks = []
 		self.VerifiedBlockCount = {}
-		self.OriginalMasterAccountList = copy.deepcopy(accountList)
-		self.ModifiedMasterAccountList = copy.deepcopy(accountList)
+
 		self.Census = None
 		self.CensusComplete = False
 		self.CensusInitiated = False
@@ -30,6 +34,7 @@ class MasterNode(Node):
 		self.SelfVerifiedBlockLock = threading.Lock()
 		self.SelfVerificationLock = threading.Lock()
 		
+		self.BlocksReady = 0;
 		self.CensusReady = 0;
 		
 		self.BlocksToVerify = []
@@ -133,41 +138,52 @@ class MasterNode(Node):
 				node.SetMasterNode(False)
 				print("MasterNodeID: " + str(self.userID) + " is relinquishing its control as a MasterNode to: " + str(self.ReplacementMasterNode))
 				break
+			# Gives each node the new master account list
+			#node.OriginalAccountList.AccountList = copy.deepcopy(self.ModifiedMasterAccountList.AccountList)
+			#node.ModifiedAccountList.AccountList = copy.deepcopy(self.ModifiedMasterAccountList.AccountList)
 
 		for node in self.Nodes:
 			# Sets new masternode variables up
 			if node.userID == self.ReplacementMasterNode:
 				node.SetMasterNode(True)
 
-				# Reinitialize this MasterNode's masternode class variables
-				self.SelectedMasterNodes = []
-				self.ReplacementMasterNode = None
-				# Ensures the current masternodes can't submit a block
-				self.PreviousMasterNodeList = []
-				for masterNode in self.MasterNodes:
-					self.PreviousMasterNodeList.append(masterNode.userID)
-
-
 				# Update Node class properties to "Change" the masternode
 				self.userID = node.userID
 				self.BlocksSolved = node.BlocksSolved
-				self.OriginalMasterAccountList = copy.deepcopy(self.ModifiedMasterAccountList)
-				self.ModifiedMasterAccountList = copy.deepcopy(self.ModifiedMasterAccountList)
-
-
-				self.SelfVerifiedBlocks = []
-				self.VerifiedBlocks = []
-				self.VerifiedBlockCount = {}
-				self.Census = None
-				self.CensusComplete = False
-				self.CensusInitiated = False
-				self.CensusVerified = False
-				self.CensusMergeComplete = False
-				self.VerifiedCensus = []
+				self.OriginalMasterAccountList.AccountList = copy.deepcopy(self.ModifiedMasterAccountList.AccountList)
+				self.ModifiedMasterAccountList.AccountList = copy.deepcopy(self.ModifiedMasterAccountList.AccountList)
 
 
 				print("MasterNodeID: " + str(self.userID) + " initialized as a new MasterNode")
 				break
+
+
+	def ReinitializeMasterNode(self):
+		# Reinitialize this MasterNode's masternode class variables
+		self.SelectedMasterNodes = []
+		self.ReplacementMasterNode = None
+		# Ensures the current masternodes can't submit a block
+		self.PreviousMasterNodeList = []
+		for masterNode in self.MasterNodes:
+			self.PreviousMasterNodeList.append(masterNode.userID)
+
+		self.SelfVerifiedBlocks = []
+		self.VerifiedBlocks = []
+		self.VerifiedBlockCount = {}
+		self.Census = None
+		self.CensusComplete = False
+		self.CensusInitiated = False
+		self.CensusVerified = False
+		self.CensusMergeComplete = False
+		self.VerifiedCensus = []
+
+		self.BlocksReady = 0;
+		self.CensusReady = 0;
+
+		self.BlocksToVerify = []
+		self.OriginalAccountListsToVerify = []
+		self.ModifiedAccountListsToVerify = []
+
 
 	def ReceiveIncomingBlocks(self, block, originalAccountList, modifiedAccountList):
 		'''
@@ -213,20 +229,34 @@ class MasterNode(Node):
 
 		self.CensusInitiated = True
 
+		# Need to increment the block count for blocks who solved
+
+
 		# Wait up for masternodes
 		for masterNode in self.MasterNodes:
-			masterNode.ReadyUpCensus()
+			masterNode.ReadyUpBlocks()
 
-		while self.CensusReady < len(self.MasterNodes):
+		while self.BlocksReady < len(self.MasterNodes):
 			continue
+
+		self.BlocksToVerify = []
+		self.OriginalAccountListsToVerify = []
+		self.ModifiedAccountListsToVerify = []
 
 		# Once all masternodes ready, initiate census
 		self.InitiateCensus()
 
 
+	def ReadyUpBlocks(self):
+		'''
+		Increments the BlocksReady count which indicates the number of masternodes who are ready for census
+		'''
+		self.BlocksReady += 1
+
 	def ReadyUpCensus(self):
 		'''
-		Increments the CensusReady count which indicates the number of masternodes who are ready for census
+		Increments the CensusReady count which indicates the number of masternodes who are ready 
+		to compare census
 		'''
 		self.CensusReady += 1
 
@@ -315,19 +345,32 @@ class MasterNode(Node):
 		After all masternodes have completed the census, compares against eachother
 		'''
 		print('Census Initiated by: ' + str(self.userID))
+
+		# Performs the Census
 		self.PerformCensus()
+
+		# Wait for masternodes to complete census
 		for masterNode in self.MasterNodes:
-			masterNode.PerformCensus()
+			masterNode.ReadyUpCensus()
+
+		while self.CensusReady < len(self.MasterNodes):
+			continue
+		
+		# Compares census between masternodes
 		for masterNode in self.MasterNodes:
 			masterNode.CompareCensus(self.userID, self.Census)
 
+		# Waits for census comparison to be complete
 		while not self.CensusVerified:
 			continue
-
 
 		self.InitiateFinalAccountListMerge()
 
 	def InitiateFinalAccountListMerge(self):
+		'''
+		Merges the census into the account list, then compares account list to rest of masternodes
+		'''
+		# Verifies that the rest of the masternodes have completed their census
 		mergeReady = 0
 		while mergeReady != len(self.MasterNodes):
 			mergeReady = 0
@@ -336,12 +379,14 @@ class MasterNode(Node):
 					mergeReady += 1
 		self.MergeCensusIntoAccountList()
 
+		# Verifies that the rest of the masternodes have merged their census into account list
 		mergeReady = 0
 		while mergeReady != len(self.MasterNodes):
 			mergeReady = 0
 			for masterNode in self.MasterNodes:
 				if masterNode.CensusMergeComplete == True:
 					mergeReady += 1
+
 		self.FinalizeAccountList()
 
 
@@ -353,14 +398,19 @@ class MasterNode(Node):
 			census: Census from masternode to compare against own
 		'''
 		valid = True
+
 		# Validates that the census values are valid
 		for userid in census:
 			if census[userid]['Balance'] != self.Census[userid]['Balance']:
 				print("Invalid census received from Masternode: " + str(masterNodeID))
 				valid = False
 				break
+
 		if valid == True:
 			self.VerifiedCensus.append(masterNodeID)
+		else:
+			# TODO: Need to initiate a new masternode and remove this one from the remainder of the process
+			pass
 
 		if len(self.VerifiedCensus) > self.Quorum():
 			#print('Census validated by:' + str(self.userID))
@@ -371,14 +421,22 @@ class MasterNode(Node):
 		'''
 		Performs the census if it hasn't already been completed by going through the verified blocks
 		and adding up all additions and subtractions from receivers and senders respectively
+		Removes duplicate transactions
+		Increments number of blocks solved for the census
 		'''
 		if not self.CensusComplete:
+			processedTransactions = []
 			self.Census = self.OriginalMasterAccountList.EmptyAccountList()
 			for block in self.VerifiedBlocks:
 				for microblock in block.MicroBlocks:
 					for transaction in microblock.TransactionList:
-						self.Census[transaction.senderID]['Balance'] -= transaction.coins
-						self.Census[transaction.receiverID]['Balance'] += transaction.coins
+						# Ensures no duplicates
+						if transaction not in processedTransactions:
+							processedTransactions.append(transaction)
+							self.Census[transaction.senderID]['Balance'] -= transaction.coins
+							self.Census[transaction.receiverID]['Balance'] += transaction.coins
+				# Increment number of blocks solved for each block
+				self.ModifiedMasterAccountList.AccountList[block.BlockID]['NumberOfBlocksSolved'] += 1
 			self.CensusComplete = True
 
 	def AddToVerifiedBlockList(self, block):
@@ -424,7 +482,10 @@ class MasterNode(Node):
 			for transaction in microBlock.TransactionList:
 				# Verifies each transaction, notifies if invalid transaction
 				if not TestAccountList.ProcessTransaction(transaction):
-					print("Invalid Transaction detected by MasterNode: " + str(self.userID) + " in block sent node: " + str(block.BlockID))
+					print("Invalid Transaction detected by MasterNode: " + str(self.userID) + " in block sent by node: " + str(block.BlockID))
+					print(transaction.coins)
+					print(transaction.senderID)
+					print(self.OriginalMasterAccountList.AccountList[transaction.senderID])
 					return False
 		
 		# Verifies that the changes to the account list are accurate by comparing
@@ -441,19 +502,26 @@ class MasterNode(Node):
 		'''
 		Merge the now verified census into the account list
 		'''
+		# For each user id in the census, adds the value of the census to the account list
 		for userid in self.Census:
 			self.ModifiedMasterAccountList.AccountList[userid]['Balance'] += self.Census[userid]['Balance']
 		print('MasterNode: ' + str(self.userID) + ' has merged the census')
 		self.CensusMergeComplete = True
 
 	def FinalizeAccountList(self):
+		'''
+		Verifies all the values in the now modified account list are valid. If so, starts the masternode 
+		selection process
+		'''
 		for masterNode in self.MasterNodes:
 			for userid in masterNode.ModifiedMasterAccountList.AccountList:
 				if masterNode.ModifiedMasterAccountList.AccountList[userid] != self.ModifiedMasterAccountList.AccountList[userid]:
 					print('Masternode ' + str(self.userID) + 'has detected a flaw in the account list of Masternode ' + str(masterNode.userID))
+					#TODO: Add failure case (remove masternode from this iteration)
+
 		print('Account List Verified for Masternode ' + str(self.userID))
 		Timer(10, self.MasternodeSelection())
 		#self.MasternodeSelection()
-	# Census applied to account list
+
 	# Quorum proceedure for accountlist ot define master accountlist
 

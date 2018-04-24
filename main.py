@@ -10,23 +10,17 @@ import copy
 import random
 import math
 
-def SplitTransactions():
+def SplitTransactions(transaction_pool):
 	randomInt = random.randint(0,4)/5
-	transactionStart = math.floor(randomInt * len(transactionPool.Transactions))
-	transactionEnd = math.floor(randomInt+1 * len(transactionPool.Transactions))
-	return transactionPool.Transactions[transactionStart:transactionEnd]
-
-def BeginMasterNodeSelection():
-	# After blocks are solved, attempts to initialize new masternodes
-	for masterNode in masterNodes:
-		threading.Thread(target=masterNode.MasternodeSelection).start()
-		#masterNode.MasternodeSelection()
+	transactionStart = math.floor(randomInt * len(transaction_pool.Transactions))
+	transactionEnd = math.floor(randomInt+1 * len(transaction_pool.Transactions))
+	return transaction_pool.Transactions[transactionStart:transactionEnd]
 
 
 NumberOfAccounts = 100
 MicroBlocksPerBlock = 3
 MaxTimePerMicroBlock = 3
-BlockIterations = 3
+BlockIterations = 4
 
 # Create initial account list
 masterAccountList = AccountList()
@@ -34,18 +28,14 @@ masterAccountList.PopulateAccountList(NumberOfAccounts, rand=True)
 print(masterAccountList.AccountList)
 
 # Initialize TransactionPool
-transactionPool = TransactionPool(masterAccountList)
+#transactionPool = TransactionPool(masterAccountList)
 
 # Generate 100 valid transactions
-transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
-print('Transactions Generated')
+#transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
+#print('Transactions Generated')
 
 # Generate 1% invalid transactions
 #transactionPool.GeneratePercentInvalidTransactions(.05)
-
-# Processes transactions
-# for transaction in transactionPool.Transactions:
-#	print(masterAccountList.ProcessTransaction(transaction))
 
 # List of Masternodes
 masterNodes = []
@@ -59,11 +49,8 @@ for masterNodeID in range(0,math.floor(NumberOfAccounts/10)):
 # Generate new nodes that contain blocks and process transactions
 nodes = []
 for userID in range(0,NumberOfAccounts):
-	# Splitting transaction pool
-	# TODO: Update so the transaction splitting is based off of "location"
-	splitTransactionPool = SplitTransactions()
 	nodeBlocksSolved = masterAccountList.AccountList[userID]['NumberOfBlocksSolved']
-	newNode = Node(userID, copy.deepcopy(masterAccountList), nodeBlocksSolved, copy.deepcopy(splitTransactionPool), MicroBlocksPerBlock, MaxTimePerMicroBlock)
+	newNode = Node(userID, copy.deepcopy(masterAccountList), nodeBlocksSolved, MicroBlocksPerBlock, MaxTimePerMicroBlock)
 	#newNode = Node(userID, copy.deepcopy(masterAccountList), copy.deepcopy(masterNodes), copy.deepcopy(transactionPool.Transactions))
 	nodes.append(newNode)
 
@@ -91,32 +78,23 @@ for masterNode in masterNodes:
 	masterNode.SetNodes(nodes)
 
 
-#for node in nodes:
-	#splitTransactionPool = SplitTransactions()
-	#node.BeginBlockBuilding(splitTransactionPool)
-
-nodeThreads = []
-masterNodeThreads = []
-
 # Main Program Loop
 for i in range(0,BlockIterations):
 	# Shuffles nodes to account for initialization time
 	random.shuffle(nodes)
 
-	# Joins all threads to get ready for next iteration
-	for nodeThread in nodeThreads:
-		nodeThread.join()
-	for masterNodeThread in masterNodeThreads:
-		masterNodeThread.join()
-	
-	nodeThreads = []
-	masterNodeThreads = []
+	# TODO: Update so the transaction splitting is based off of "location"
 
 	# Initialize TransactionPool
-	transactionPool = TransactionPool(copy.deepcopy(masterNodes[0].ModifiedMasterAccountList))
+	transactionPool = TransactionPool(copy.deepcopy(masterAccountList))
 
 	# Generate 100 valid transactions
-	transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
+	#transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
+	transactionPool.GenerateValidTransactions(math.floor(10))
+	print('Transactions Generated')
+
+	nodeThreads = []
+	masterNodeThreads = []
 
 	# Begins masternode processing incoming blocks
 	for masterNode in masterNodes:
@@ -126,24 +104,27 @@ for i in range(0,BlockIterations):
 
 	# Begins node processing transactions and inserting into blocks
 	for node in nodes:
-		splitTransactionPool = SplitTransactions()
-		nodeThread = threading.Thread(target=node.BeginBlockBuilding, args=[splitTransactionPool])
+		splitTransactionPool = SplitTransactions(transactionPool)
+		nodeThread = threading.Thread(target=node.BeginBlockBuilding, args=[copy.deepcopy(splitTransactionPool)])
 		nodeThread.start()
 		nodeThreads.append(nodeThread)
 
+	# Joins all threads to get ready for next iteration
+	for nodeThread in nodeThreads:
+		nodeThread.join()
+	for masterNodeThread in masterNodeThreads:
+		masterNodeThread.join()
 
+	masterAccountList.AccountList = copy.deepcopy(masterNodes[0].ModifiedMasterAccountList.AccountList)
 
-# After all blocks are solved, beings master node selection process via threads
-#AllBlocksSolved = Timer(25, BeginMasterNodeSelection)
-#AllBlocksSolved.start()
-	
+	# Update each nodes account list
+	for node in nodes:
+		node.OriginalAccountList.AccountList = copy.deepcopy(masterAccountList.AccountList)
+		node.ModifiedAccountList.AccountList = copy.deepcopy(masterAccountList.AccountList)
+		node.ReinitializeNode()
 
-
-#print(len(nodes))
-	#for node in nodes:
-	#	node.ForwardSolvedBlockToMasterNodes()
-
-
+	for masterNode in masterNodes:
+		masterNode.ReinitializeMasterNode()
 
 
 
