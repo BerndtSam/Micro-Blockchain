@@ -202,17 +202,20 @@ class MasterNode(Node):
 				self.ModifiedAccountListsToVerify.pop(0)
 				break
 		
-		x = [block.BlockID for block in self.VerifiedBlocks]
-		print('MasterNode ' + str(self.userID) + ' Verified Blocks' + str(x))
+		# Print out the verified block list for each masternode
+		verifiedBlockList = [block.BlockID for block in self.VerifiedBlocks]
+		print('MasterNode ' + str(self.userID) + ' Verified Blocks' + str(verifiedBlockList))
 
 		self.CensusInitiated = True
 
+		# Wait up for masternodes
 		for masterNode in self.MasterNodes:
 			masterNode.ReadyUpCensus()
 
 		while self.CensusReady < len(self.MasterNodes):
 			continue
 
+		# Once all masternodes ready, initiate census
 		self.InitiateCensus()
 
 
