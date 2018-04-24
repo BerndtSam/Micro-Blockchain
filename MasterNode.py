@@ -191,15 +191,15 @@ class MasterNode(Node):
 		# Have this loop to go through received blocks and process them. Add to verified blocks if need be
 		while len(self.VerifiedBlocks) < 5 and self.CensusInitiated == False:
 			for i in range(0,len(self.BlocksToVerify)):
-				#self.SelfVerificationLock.acquire()
+				# Verifies the block information is valid
 				if self.VerifyBlock(self.BlocksToVerify[i], self.OriginalAccountListsToVerify[i], self.ModifiedAccountListsToVerify[i]):
 					for masterNode in self.MasterNodes:
 						# Send block to each masternode to verify
 						masterNode.VerifyBlockFromMasterNode(self.BlocksToVerify[i], self.OriginalAccountListsToVerify[i], self.ModifiedAccountListsToVerify[i])
+				# Pops off the just verified/unverified block
 				self.BlocksToVerify.pop(0)
 				self.OriginalAccountListsToVerify.pop(0)
 				self.ModifiedAccountListsToVerify.pop(0)
-				#self.SelfVerificationLock.release()
 				break
 		
 		x = [block.BlockID for block in self.VerifiedBlocks]
@@ -216,34 +216,10 @@ class MasterNode(Node):
 		self.InitiateCensus()
 
 
-		
-		'''# If the masternode has not yet accepted 5 blocks
-		if len(self.VerifiedBlocks) < 5 and self.CensusInitiated == False:
-			# Verify the block, account list, and account list after transactions
-			if self.VerifyBlock(block, originalAccountList, modifiedAccountList):
-				for masterNode in self.MasterNodes:
-					# Send block to each masternode to verify
-					masterNode.VerifyBlockFromMasterNode(block, originalAccountList, modifiedAccountList)
-
-		if len(self.VerifiedBlocks) == 5 and self.CensusInitiated == False:
-			self.CensusInitiated = True
-			
-			# Wait for the rest of the masternodes to catch up
-			fullyVerified = 0
-			while fullyVerified < len(self.MasterNodes):
-				fullyVerified = 0
-				for masterNode in self.MasterNodes:
-					if len(masterNode.VerifiedBlocks) == 5 and masterNode.CensusInitiated == True:
-						fullyVerified += 1
-
-			print('MasterNode ' + str(self.userID) + 'About to merge verified blocks')
-			self.MergeVerifiedBlocks()			
-
-
-			Timer(5, self.InitiateCensus).start()
-			#self.InitiateCensus()'''
-
 	def ReadyUpCensus(self):
+		'''
+		Increments the CensusReady count which indicates the number of masternodes who are ready for census
+		'''
 		self.CensusReady += 1
 
 

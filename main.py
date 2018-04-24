@@ -98,13 +98,19 @@ for masterNode in masterNodes:
 nodeThreads = []
 masterNodeThreads = []
 
-
 # Main Program Loop
 for i in range(0,BlockIterations):
-	for masterNodeThread in masterNodeThreads:
-		masterNodeThread.join()
+	# Shuffles nodes to account for initialization time
+	random.shuffle(nodes)
+
+	# Joins all threads to get ready for next iteration
 	for nodeThread in nodeThreads:
 		nodeThread.join()
+	for masterNodeThread in masterNodeThreads:
+		masterNodeThread.join()
+	
+	nodeThreads = []
+	masterNodeThreads = []
 
 	# Initialize TransactionPool
 	transactionPool = TransactionPool(copy.deepcopy(masterNodes[0].ModifiedMasterAccountList))
@@ -112,18 +118,18 @@ for i in range(0,BlockIterations):
 	# Generate 100 valid transactions
 	transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
 
+	# Begins masternode processing incoming blocks
 	for masterNode in masterNodes:
 		masterNodeThread = threading.Thread(target=masterNode.ProcessIncomingBlocks)
 		masterNodeThread.start()
 		masterNodeThreads.append(masterNodeThread)
 
-
+	# Begins node processing transactions and inserting into blocks
 	for node in nodes:
 		splitTransactionPool = SplitTransactions()
 		nodeThread = threading.Thread(target=node.BeginBlockBuilding, args=[splitTransactionPool])
 		nodeThread.start()
 		nodeThreads.append(nodeThread)
-		#node.BeginBlockBuilding(splitTransactionPool)
 
 
 
