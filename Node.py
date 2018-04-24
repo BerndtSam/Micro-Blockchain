@@ -36,8 +36,10 @@ class Node:
 
 		self.InitializeNewBlock()
 
-		self.TransactionThread = threading.Thread(target=self.ProcessTransactions)
-		self.TransactionThread.start()
+		self.ProcessTransactions()
+
+		#self.TransactionThread = threading.Thread(target=self.ProcessTransactions)
+		#self.TransactionThread.start()
 		
 		#self.ForwardSolvedBlockToMasterNodes()
 		#self.ProcessBlockThread = threading.Thread(target=self.ForwardSolvedBlockToMasterNodes)
@@ -151,7 +153,7 @@ class Node:
 		'''
 		if self.Block.IsSolved():
 			for masterNode in self.MasterNodes:
-				masterNode.ProcessIncomingBlocks(self.Block, self.OriginalAccountList, self.ModifiedAccountList)
+				masterNode.ReceiveIncomingBlocks(self.Block, self.OriginalAccountList, self.ModifiedAccountList)
 
 
 

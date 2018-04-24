@@ -26,6 +26,7 @@ def BeginMasterNodeSelection():
 NumberOfAccounts = 100
 MicroBlocksPerBlock = 3
 MaxTimePerMicroBlock = 3
+BlockIterations = 3
 
 # Create initial account list
 masterAccountList = AccountList()
@@ -94,19 +95,35 @@ for masterNode in masterNodes:
 	#splitTransactionPool = SplitTransactions()
 	#node.BeginBlockBuilding(splitTransactionPool)
 
+nodeThreads = []
+masterNodeThreads = []
 
 
-for i in range(0,3):
+# Main Program Loop
+for i in range(0,BlockIterations):
+	for masterNodeThread in masterNodeThreads:
+		masterNodeThread.join()
+	for nodeThread in nodeThreads:
+		nodeThread.join()
+
 	# Initialize TransactionPool
 	transactionPool = TransactionPool(copy.deepcopy(masterNodes[0].ModifiedMasterAccountList))
 
 	# Generate 100 valid transactions
 	transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
 
+	for masterNode in masterNodes:
+		masterNodeThread = threading.Thread(target=masterNode.ProcessIncomingBlocks)
+		masterNodeThread.start()
+		masterNodeThreads.append(masterNodeThread)
+
 
 	for node in nodes:
 		splitTransactionPool = SplitTransactions()
-		node.BeginBlockBuilding(splitTransactionPool)
+		nodeThread = threading.Thread(target=node.BeginBlockBuilding, args=[splitTransactionPool])
+		nodeThread.start()
+		nodeThreads.append(nodeThread)
+		#node.BeginBlockBuilding(splitTransactionPool)
 
 
 

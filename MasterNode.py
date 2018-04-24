@@ -1,5 +1,6 @@
 from Node import Node
 from threading import Timer
+import threading
 import random
 import copy
 import math
@@ -23,6 +24,18 @@ class MasterNode(Node):
 		self.CensusVerified = False
 		self.CensusMergeComplete = False
 		self.VerifiedCensus = []
+
+		self.AddBlockLock = threading.Lock()
+		self.VerifiedBlockLock = threading.Lock()
+		self.SelfVerifiedBlockLock = threading.Lock()
+		self.SelfVerificationLock = threading.Lock()
+		
+		self.CensusReady = 0;
+		
+		self.BlocksToVerify = []
+		self.OriginalAccountListsToVerify = []
+		self.ModifiedAccountListsToVerify = []
+
 
 
 	def SetCurrentMasterNodeIDs(self):
@@ -156,7 +169,16 @@ class MasterNode(Node):
 				print("MasterNodeID: " + str(self.userID) + " initialized as a new MasterNode")
 				break
 
-	def ProcessIncomingBlocks(self, block, originalAccountList, modifiedAccountList):
+	def ReceiveIncomingBlocks(self, block, originalAccountList, modifiedAccountList):
+		self.AddBlockLock.acquire()
+		self.BlocksToVerify.append(block)
+		self.OriginalAccountListsToVerify.append(originalAccountList)
+		self.ModifiedAccountListsToVerify.append(modifiedAccountList)
+		self.AddBlockLock.release()
+		return
+
+
+	def ProcessIncomingBlocks(self):
 		'''
 		If a node solves a block, it is sent to this function for the masternode to verify
 		MasterNode will verify the block itself, then send it to the other masternodes to verify
@@ -165,8 +187,38 @@ class MasterNode(Node):
 			originalAccountList: Original account list to verify against
 			modifiedAccountList: Account list after transactions to verify against
 		'''
-		# If the masternode has not yet accepted 5 blocks
-		if len(self.VerifiedBlocks) < 5:
+
+		# Have this loop to go through received blocks and process them. Add to verified blocks if need be
+		while len(self.VerifiedBlocks) < 5 and self.CensusInitiated == False:
+			for i in range(0,len(self.BlocksToVerify)):
+				#self.SelfVerificationLock.acquire()
+				if self.VerifyBlock(self.BlocksToVerify[i], self.OriginalAccountListsToVerify[i], self.ModifiedAccountListsToVerify[i]):
+					for masterNode in self.MasterNodes:
+						# Send block to each masternode to verify
+						masterNode.VerifyBlockFromMasterNode(self.BlocksToVerify[i], self.OriginalAccountListsToVerify[i], self.ModifiedAccountListsToVerify[i])
+				self.BlocksToVerify.pop(0)
+				self.OriginalAccountListsToVerify.pop(0)
+				self.ModifiedAccountListsToVerify.pop(0)
+				#self.SelfVerificationLock.release()
+				break
+		
+		x = [block.BlockID for block in self.VerifiedBlocks]
+		print('MasterNode ' + str(self.userID) + ' Verified Blocks' + str(x))
+
+		self.CensusInitiated = True
+
+		for masterNode in self.MasterNodes:
+			masterNode.ReadyUpCensus()
+
+		while self.CensusReady < len(self.MasterNodes):
+			continue
+
+		self.InitiateCensus()
+
+
+		
+		'''# If the masternode has not yet accepted 5 blocks
+		if len(self.VerifiedBlocks) < 5 and self.CensusInitiated == False:
 			# Verify the block, account list, and account list after transactions
 			if self.VerifyBlock(block, originalAccountList, modifiedAccountList):
 				for masterNode in self.MasterNodes:
@@ -184,11 +236,15 @@ class MasterNode(Node):
 					if len(masterNode.VerifiedBlocks) == 5 and masterNode.CensusInitiated == True:
 						fullyVerified += 1
 
+			print('MasterNode ' + str(self.userID) + 'About to merge verified blocks')
 			self.MergeVerifiedBlocks()			
 
 
 			Timer(5, self.InitiateCensus).start()
-			#self.InitiateCensus()
+			#self.InitiateCensus()'''
+
+	def ReadyUpCensus(self):
+		self.CensusReady += 1
 
 
 	def MergeVerifiedBlocks(self):
@@ -248,16 +304,23 @@ class MasterNode(Node):
 			True: If block is valid
 			False: If block is not valid
 		'''
+		self.SelfVerifiedBlockLock.acquire()
 		if block not in self.SelfVerifiedBlocks:
 			if self.VerifyBlock(block, originalAccountList, modifiedAccountList):
 				self.SelfVerifiedBlocks.append(block)
-				self.VerifiedBlockCount[block.BlockID] = 0
+				self.VerifiedBlockCount[block.BlockID] = 1
+				self.SelfVerifiedBlockLock.release()
 				return True
-			return False
+			else:
+				self.SelfVerifiedBlockLock.release()
+				return False
 		else:
+			self.SelfVerifiedBlockLock.release()
+			self.VerifiedBlockLock.acquire()
 			self.VerifiedBlockCount[block.BlockID] += 1
 			if self.VerifiedBlockCount[block.BlockID] >= self.Quorum() and len(self.VerifiedBlocks) < 5:
 				self.AddToVerifiedBlockList(block)
+			self.VerifiedBlockLock.release()
 			return True
 
 
@@ -344,6 +407,7 @@ class MasterNode(Node):
 		if block not in self.VerifiedBlocks and len(self.VerifiedBlocks) < 5:
 			# Appends to verified block list
 			self.VerifiedBlocks.append(block)
+
 			print("Block: " + str(block.BlockID) + " verified by MasterNode: " + str(self.userID))
 
 
