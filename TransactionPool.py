@@ -54,7 +54,7 @@ class TransactionPool:
 			# Randomly select a user from list of availableUsers
 			fromUser = availableFromUsers[random.randrange(0, len(availableFromUsers))]
 
-			if not self.modifiedAccountList.AccountIsEmpty(fromUser):
+			if not self.originalAccountList.AccountIsEmpty(fromUser):
 				validUser = True
 
 		return fromUser
@@ -85,7 +85,9 @@ class TransactionPool:
 				try:
 					coins = random.randrange(0,maxAmountToSend) + random.random()
 				except:
-					print(str(maxAmountToSend))
+					print('Invalid "Valid" transaction sending ' + str(maxAmountToSend) + ' coins from ' +  str(fromUser))
+					print(self.originalAccountList.AccountList)
+					continue
 			else:
 				coins = random.random()
 				while coins > self.originalAccountList.AccountBalance(fromUser):

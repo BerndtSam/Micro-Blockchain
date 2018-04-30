@@ -80,6 +80,14 @@ for masterNode in masterNodes:
 
 # Main Program Loop
 for i in range(0,BlockIterations):
+	median = masterAccountList.MedianBlocksSolved()
+	print('Median Blocks Solved: ' + str(masterAccountList.MedianBlocksSolved()))
+	eligibleMasterNodes = [node for node in masterAccountList.AccountList if masterAccountList.AccountList[node]['NumberOfBlocksSolved'] > median] 
+	print('Eligible MasterNodes: ' + str(eligibleMasterNodes))
+
+	negativeBalancedNodes = [(node, masterAccountList.AccountList[node]['Balance']) for node in masterAccountList.AccountList if masterAccountList.AccountList[node]['Balance'] < 0] 
+	print('Nodes with negative balances: ' + str(negativeBalancedNodes))
+
 	# Shuffles nodes to account for initialization time
 	random.shuffle(nodes)
 
@@ -92,6 +100,8 @@ for i in range(0,BlockIterations):
 	#transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
 	transactionPool.GenerateValidTransactions(math.floor(10))
 	print('Transactions Generated')
+	for transaction in transactionPool.Transactions:
+		print('From: ' + str(transaction.senderID) + ' To: ' + str(transaction.receiverID) + ' Coins: ' + str(transaction.coins))
 
 	nodeThreads = []
 	masterNodeThreads = []
@@ -116,7 +126,6 @@ for i in range(0,BlockIterations):
 		masterNodeThread.join()
 
 	masterAccountList.AccountList = copy.deepcopy(masterNodes[0].ModifiedMasterAccountList.AccountList)
-	
 
 	'''processed = 0
 	unprocessed = 0

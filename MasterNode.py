@@ -430,18 +430,20 @@ class MasterNode(Node):
 		'''
 		if not self.CensusComplete:
 			processedTransactions = []
+			processedTransactionSenders = []
 			self.Census = self.OriginalMasterAccountList.EmptyAccountList()
 			for block in self.VerifiedBlocks:
 				for microblock in block.MicroBlocks:
 					for transaction in microblock.TransactionList:
 						# Ensures no duplicates
-						if transaction not in processedTransactions:
-							transaction.processed = True
-							processedTransactions.append(copy.deepcopy(transaction))
-							self.Census[transaction.senderID]['Balance'] -= transaction.coins
-							self.Census[transaction.receiverID]['Balance'] += transaction.coins
+						if transaction not in processedTransactions and transaction.senderID not in processedTransactionSenders:
+								transaction.processed = True
+								processedTransactions.append(copy.deepcopy(transaction))
+								processedTransactionSenders.append(transaction.senderID)
+								self.Census[transaction.senderID]['Balance'] -= transaction.coins
+								self.Census[transaction.receiverID]['Balance'] += transaction.coins
 				# Increment number of blocks solved for each block
-				self.ModifiedMasterAccountList.AccountList[block.BlockID]['NumberOfBlocksSolved'] += 1
+				self.ModifiedMasterAccountList.AddBlock(block.BlockID)
 			self.CensusComplete = True
 
 	def AddToVerifiedBlockList(self, block):

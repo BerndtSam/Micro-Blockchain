@@ -30,8 +30,12 @@ class AccountList:
 		for i in range(0,numberOfUsers):
 			if rand == True:
 				self.AccountList[i] = copy.deepcopy(self.EmptyAccountListEntry)
-				if random.random() > 0.5:
-					self.AccountList[i]['NumberOfBlocksSolved'] = random.randrange(0, 101)
+				if random.random() > 0.9:
+					self.AccountList[i]['NumberOfBlocksSolved'] = random.randrange(40, 101)
+				elif random.random() > 0.8:
+					self.AccountList[i]['NumberOfBlocksSolved'] = random.randrange(10, 40)
+				elif random.random() > 0.4:
+					self.AccountList[i]['NumberOfBlocksSolved'] = random.randrange(1, 10)
 				else:
 					self.AccountList[i]['NumberOfBlocksSolved'] = 0
 
