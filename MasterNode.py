@@ -4,6 +4,7 @@ import threading
 import random
 import copy
 import math
+import sys
 
 class MasterNode(Node):
 	def __init__(self, userID, accountList, blocksSolved, microBlocksPerBlock, maxTimePerMicroBlock, transactionPool, previousMasterNodeList):
@@ -43,6 +44,16 @@ class MasterNode(Node):
 		self.OriginalAccountListsToVerify = []
 		self.ModifiedAccountListsToVerify = []
 
+		self.BytesPerBlockTransaction = 0
+		self.BytesPerMasterNodeBlockVerification = 0
+		self.BytesPerCensusVerification = 0
+		self.BytesFinalizingAccountLists = 0
+		self.BytesComparingCensus = 0
+		self.BytesFinalizingAccountListTransmission = 0
+		self.BytesMasterNodeSelection = 0
+		self.TotalBytesSent = 0
+		self.TotalBytesReceived = 0
+		self.HTTPHeaderSize = 800
 
 
 	def SetCurrentMasterNodeIDs(self):
@@ -70,6 +81,8 @@ class MasterNode(Node):
 		for masterNode in self.MasterNodes:
 			# Checks if another masternode already has the randomly choosen masternode as part of its list
 			# if below returns false, it means it has
+			self.TotalBytesSent += sys.getsizeof(self.ReplacementMasterNode) + self.HTTPHeaderSize
+			self.BytesMasterNodeSelection += sys.getsizeof(self.ReplacementMasterNode) + self.HTTPHeaderSize
 			if masterNode.CompareNewMasterNodes(self.ReplacementMasterNode) == False:
 				print("MasterNodeID: " + str(self.userID) + " has attempted to set a masternode which already has been chosen: " + str(self.ReplacementMasterNode))
 				MasterNodeExists = True
@@ -83,6 +96,8 @@ class MasterNode(Node):
 			# If it hasn't, lets all the other masternodes know to add it to their list
 			for masterNode in self.MasterNodes:
 				masterNode.AddSelectedMasterNode(self.ReplacementMasterNode)
+				self.TotalBytesSent += sys.getsizeof(self.ReplacementMasterNode) + self.HTTPHeaderSize
+				self.BytesMasterNodeSelection += sys.getsizeof(self.ReplacementMasterNode) + self.HTTPHeaderSize
 
 
 	def MasternodeSelection(self):
@@ -118,6 +133,7 @@ class MasterNode(Node):
 			True: If masterNodeID is not already in the selected masternodes
 			False: If masterNodeID is already in the selected masternodes
 		'''
+		self.TotalBytesReceived += sys.getsizeof(masterNodeID) + self.HTTPHeaderSize
 		if masterNodeID in self.SelectedMasterNodes:
 			return False
 		return True
@@ -128,6 +144,7 @@ class MasterNode(Node):
 		Input:
 			masterNodeID: ID of masternode to be added to replace current masternodes
 		'''
+		self.TotalBytesReceived += sys.getsizeof(masterNodeID) + self.HTTPHeaderSize
 		self.SelectedMasterNodes.append(masterNodeID)
 
 	def InitializeNewMasterNode(self):
@@ -154,8 +171,8 @@ class MasterNode(Node):
 				self.BlocksSolved = node.BlocksSolved
 				self.OriginalMasterAccountList.AccountList = copy.deepcopy(self.ModifiedMasterAccountList.AccountList)
 				self.ModifiedMasterAccountList.AccountList = copy.deepcopy(self.ModifiedMasterAccountList.AccountList)
-
-
+				self.BytesMasterNodeSelection += sys.getsizeof(self.ModifiedMasterAccountList.AccountList) + sys.getsizeof(self.MasterNodes)
+				self.TotalBytesSent += sys.getsizeof(self.ModifiedMasterAccountList.AccountList) + sys.getsizeof(self.MasterNodes)
 				print("MasterNodeID: " + str(self.userID) + " initialized as a new MasterNode")
 				break
 
@@ -202,6 +219,8 @@ class MasterNode(Node):
 		self.BlocksToVerify.append(block)
 		self.OriginalAccountListsToVerify.append(originalAccountList)
 		self.ModifiedAccountListsToVerify.append(modifiedAccountList)
+		self.BytesPerBlockTransaction = sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(self.BlocksToVerify[0].MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList) + self.HTTPHeaderSize
+		self.TotalBytesReceived += sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(self.BlocksToVerify[0].MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList) + self.HTTPHeaderSize
 		self.AddBlockLock.release()
 		return
 
@@ -221,6 +240,8 @@ class MasterNode(Node):
 					for masterNode in self.MasterNodes:
 						# Send block to each masternode to verify
 						masterNode.VerifyBlockFromMasterNode(self.BlocksToVerify[i], self.OriginalAccountListsToVerify[i], self.ModifiedAccountListsToVerify[i])
+						self.BytesPerMasterNodeBlockVerification = sys.getsizeof(self.BlocksToVerify[i]) + sys.getsizeof(self.BlocksToVerify[i].MicroBlocks) + len(self.BlocksToVerify[i].MicroBlocks)*sys.getsizeof(self.BlocksToVerify[i].MicroBlocks[0].TransactionList) + sys.getsizeof(self.OriginalAccountListsToVerify[i]) + sys.getsizeof(self.ModifiedAccountListsToVerify[i]) + self.HTTPHeaderSize
+						self.TotalBytesSent += sys.getsizeof(self.BlocksToVerify[i]) + sys.getsizeof(self.BlocksToVerify[i].MicroBlocks) + len(self.BlocksToVerify[i].MicroBlocks)*sys.getsizeof(self.BlocksToVerify[i].MicroBlocks[0].TransactionList) + sys.getsizeof(self.OriginalAccountListsToVerify[i]) + sys.getsizeof(self.ModifiedAccountListsToVerify[i]) + self.HTTPHeaderSize
 				# Pops off the just verified/unverified block
 				self.BlocksToVerify.pop(0)
 				self.OriginalAccountListsToVerify.pop(0)
@@ -239,6 +260,7 @@ class MasterNode(Node):
 		# Wait up for masternodes
 		for masterNode in self.MasterNodes:
 			masterNode.ReadyUpBlocks()
+			self.TotalBytesSent += self.HTTPHeaderSize
 
 		while self.BlocksReady < len(self.MasterNodes):
 			continue
@@ -256,6 +278,7 @@ class MasterNode(Node):
 		Increments the BlocksReady count which indicates the number of masternodes who are ready for census
 		'''
 		self.BlocksReady += 1
+		self.TotalBytesReceived += self.HTTPHeaderSize
 
 	def ReadyUpCensus(self):
 		'''
@@ -263,52 +286,8 @@ class MasterNode(Node):
 		to compare census
 		'''
 		self.CensusReady += 1
+		self.TotalBytesReceived += self.HTTPHeaderSize
 
-
-	def MergeVerifiedBlocks(self):
-		'''
-		In the case not all masternodes agree on blocks, this finds the most frequently agreed and sets all
-		masternodes verified blocks to match
-		TODO: Clean this up a bit
-		'''
-		
-		# Number of masternodes with this block
-		compiledBlocks = {}
-		# Blocks themselves
-		compiledBlockList = []
-
-		# Runs through verified blocks, counting the number of times a block shows up
-		for masterNode in self.MasterNodes:
-			for verifiedBlock in masterNode.VerifiedBlocks:
-				try:
-					compiledBlocks[verifiedBlock.BlockID] += 1
-				except:
-					compiledBlocks[verifiedBlock.BlockID] = 0
-
-				# Grabs the verified block if it hasn't already shown up
-				if verifiedBlock.BlockID not in compiledBlocks:
-					compiledBlockList.append(verifiedBlock)
-		
-		# Finds the most frequently occuring blocks out of the verified blocks
-		maxFive = []
-		while len(maxFive) < 5:
-			maxItem = 0
-			maxBlock = None 
-			for blockID in compiledBlocks:
-				if maxItem < compiledBlocks[blockID] and blockID not in maxFive:
-					maxItem = compiledBlocks[blockID]
-					maxBlock = blockID
-			maxFive.append(maxBlock)
-
-		# Compiles top five blocks
-		VerifiedBlocks = []
-		for block in compiledBlockList:
-			if block.BlockID in maxFive and block not in VerifiedBlocks:
-				VerifiedBlocks.append(block)
-
-		# Assigns each masternode these 5 blocks
-		for masterNode in self.MasterNodes:
-			masterNode.VerifiedBlocks = VerifiedBlocks
 
 	def VerifyBlockFromMasterNode(self, block, originalAccountList, modifiedAccountList):
 		'''
@@ -323,6 +302,7 @@ class MasterNode(Node):
 			False: If block is not valid
 		'''
 		self.SelfVerifiedBlockLock.acquire()
+		self.TotalBytesReceived += sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(block.MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList)
 		if block not in self.SelfVerifiedBlocks:
 			if self.VerifyBlock(block, originalAccountList, modifiedAccountList):
 				self.SelfVerifiedBlocks.append(block)
@@ -356,6 +336,7 @@ class MasterNode(Node):
 		# Wait for masternodes to complete census
 		for masterNode in self.MasterNodes:
 			masterNode.ReadyUpCensus()
+			self.TotalBytesSent += self.HTTPHeaderSize
 
 		while self.CensusReady < len(self.MasterNodes):
 			continue
@@ -363,7 +344,9 @@ class MasterNode(Node):
 		# Compares census between masternodes
 		for masterNode in self.MasterNodes:
 			masterNode.CompareCensus(self.userID, self.Census)
-
+			self.TotalBytesSent += sys.getsizeof(self.userID) + sys.getsizeof(self.Census) + self.HTTPHeaderSize
+			self.BytesPerCensusVerification = sys.getsizeof(self.userID) + sys.getsizeof(self.Census) + self.HTTPHeaderSize
+			self.BytesComparingCensus += sys.getsizeof(self.userID) + sys.getsizeof(self.Census) + self.HTTPHeaderSize
 		# Waits for census comparison to be complete
 		while not self.CensusVerified:
 			continue
@@ -376,20 +359,32 @@ class MasterNode(Node):
 		'''
 		# Verifies that the rest of the masternodes have completed their census
 		mergeReady = 0
+		masterNodesReady = []
 		while mergeReady != len(self.MasterNodes):
 			mergeReady = 0
 			for masterNode in self.MasterNodes:
 				if masterNode.CensusComplete == True:
 					mergeReady += 1
+				if masterNode.userID not in masterNodesReady and masterNode.CensusComplete == True:
+					self.TotalBytesReceived += self.HTTPHeaderSize
+					self.BytesComparingCensus += self.HTTPHeaderSize
+					masterNodesReady.append(masterNode.userID)
 		self.MergeCensusIntoAccountList()
 
 		# Verifies that the rest of the masternodes have merged their census into account list
 		mergeReady = 0
+		masterNodesReady = []
 		while mergeReady != len(self.MasterNodes):
 			mergeReady = 0
 			for masterNode in self.MasterNodes:
 				if masterNode.CensusMergeComplete == True:
+					self.TotalBytesReceived += self.HTTPHeaderSize
+					self.BytesComparingCensus += self.HTTPHeaderSize
 					mergeReady += 1
+				if masterNode.userID not in masterNodesReady and masterNode.CensusMergeComplete == True:
+					self.TotalBytesReceived += self.HTTPHeaderSize
+					self.BytesComparingCensus += self.HTTPHeaderSize
+					masterNodesReady.append(masterNode.userID)
 
 		self.FinalizeAccountList()
 
@@ -401,6 +396,8 @@ class MasterNode(Node):
 			masterNodeID: ID of masternode the census was received from
 			census: Census from masternode to compare against own
 		'''
+		self.TotalBytesReceived += sys.getsizeof(masterNodeID) + sys.getsizeof(census) + self.HTTPHeaderSize
+		self.BytesComparingCensus += sys.getsizeof(masterNodeID) + sys.getsizeof(census) + self.HTTPHeaderSize
 		valid = True
 
 		# Validates that the census values are valid
@@ -521,6 +518,10 @@ class MasterNode(Node):
 		selection process
 		'''
 		for masterNode in self.MasterNodes:
+			self.TotalBytesSent += self.HTTPHeaderSize + sys.getsizeof(self.ModifiedMasterAccountList) + sys.getsizeof(self.ModifiedMasterAccountList.AccountList)
+			self.TotalBytesReceived += self.HTTPHeaderSize + sys.getsizeof(self.ModifiedMasterAccountList) + sys.getsizeof(self.ModifiedMasterAccountList.AccountList)
+			self.BytesFinalizingAccountLists += self.HTTPHeaderSize + sys.getsizeof(self.ModifiedMasterAccountList) + sys.getsizeof(self.ModifiedMasterAccountList.AccountList)
+			self.BytesFinalizingAccountListTransmission = self.HTTPHeaderSize + sys.getsizeof(self.ModifiedMasterAccountList) + sys.getsizeof(self.ModifiedMasterAccountList.AccountList)
 			for userid in masterNode.ModifiedMasterAccountList.AccountList:
 				if masterNode.ModifiedMasterAccountList.AccountList[userid] != self.ModifiedMasterAccountList.AccountList[userid]:
 					print('Masternode ' + str(self.userID) + 'has detected a flaw in the account list of Masternode ' + str(masterNode.userID))

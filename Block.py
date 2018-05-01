@@ -1,4 +1,5 @@
 from MicroBlock import MicroBlock
+import sys
 
 class Block:
     def __init__(self, userID, microBlocksPerBlock, maxTimePerMicroBlock):

@@ -125,6 +125,17 @@ for i in range(0,BlockIterations):
 	for masterNodeThread in masterNodeThreads:
 		masterNodeThread.join()
 
+	print('\nStatistics:')
+	print('Total Bytes Received Per MasterNode: ' + str(masterNodes[0].TotalBytesReceived))
+	print('Total Bytes Sent Per MasterNode: ' + str(masterNodes[0].TotalBytesSent))
+	print('Bytes Per Block Transmission from Node: ' + str(masterNodes[0].BytesPerBlockTransaction))
+	print('Bytes Per Masternode Block Verification Transmission: ' + str(masterNodes[0].BytesPerMasterNodeBlockVerification))
+	print('Bytes Per Census Verification Transmission: ' + str(masterNodes[0].BytesPerCensusVerification))
+	print('Bytes to Compare and Verify Census: ' + str(masterNodes[0].BytesComparingCensus))
+	print('Bytes Per Finalization of Account Lists Transmission: ' + str(masterNodes[0].BytesFinalizingAccountListTransmission))
+	print('Bytes to Finalize Account List: ' + str(masterNodes[0].BytesFinalizingAccountLists))
+	print('Bytes to Initialize new MasterNodes: ' + str(masterNodes[0].BytesMasterNodeSelection))
+
 	masterAccountList.AccountList = copy.deepcopy(masterNodes[0].ModifiedMasterAccountList.AccountList)
 
 	'''processed = 0
