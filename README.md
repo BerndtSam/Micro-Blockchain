@@ -24,19 +24,29 @@ In the main.py file, you can configure the settings of the blockchain iterations
 
 The defaults are as follows:
 NumberOfAccounts = 100
+
 MicroBlocksPerBlock = 3
+
 MaxTimePerMicroBlock = 3
+
 BlockIterations = 5
+
 DistanceThreshold = 4
+
 NumberOfTransactionsPerIteration = 50
 
 You are able to adjust each of these for your own application. 
 
 NumberOfAccounts: The total number of nodes that are active in the blockchain
+
 MicroBlocksPerBlock: The number of microblocks that will be created per block. Microblocks part of the micro blockchain
+
 MaxTimePerMicroBlock: As the blocks are not actually solving the SHA-256 problem as proposed in the paper, you can adjust the amount of time each microblock can be solved in.
+
 BlockIterations: The number of times you want the whole process to loop
+
 DistanceThreshold: The theoretical distance that transactions can travel per block. Assists in proving census concept
+
 NumberOfTransactionsPerIteration: The total number of additional transactions you want per iteration. Assists in proving census concept.
 
 As a word of caution, increasing the number of MicroBlocksPerBlock will result in an exponential increase in threads.
