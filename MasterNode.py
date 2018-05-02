@@ -157,6 +157,7 @@ class MasterNode(Node):
 				node.SetMasterNode(False)
 				print("MasterNodeID: " + str(self.userID) + " is relinquishing its control as a MasterNode to: " + str(self.ReplacementMasterNode))
 				break
+			node.SetReset(True)
 			# Gives each node the new master account list
 			#node.OriginalAccountList.AccountList = copy.deepcopy(self.ModifiedMasterAccountList.AccountList)
 			#node.ModifiedAccountList.AccountList = copy.deepcopy(self.ModifiedMasterAccountList.AccountList)
@@ -222,7 +223,6 @@ class MasterNode(Node):
 		self.BytesPerBlockTransaction = sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(self.BlocksToVerify[0].MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList) + self.HTTPHeaderSize
 		self.TotalBytesReceived += sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(self.BlocksToVerify[0].MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList) + self.HTTPHeaderSize
 		self.AddBlockLock.release()
-		return
 
 
 	def ProcessIncomingBlocks(self):

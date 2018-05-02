@@ -20,6 +20,7 @@ class Node:
 		self.MicroBlocksPerBlock = microBlocksPerBlock
 		self.MaxTimePerMicroBlock = maxTimePerMicroBlock
 		self.Block = None
+		self.Reset = False
 
 
 	def BeginBlockBuilding(self, transactionPool):
@@ -94,12 +95,20 @@ class Node:
 			if microBlock == self.MicroBlocksPerBlock-1:
 				for transactionIndex in range(math.floor(TransactionSplitIndex*(microBlock+1)), len(self.TransactionPool)):
 					self.AddTransaction(self.TransactionPool[transactionIndex])
-
+			if self.Reset == True:
+				self.SetReset(False)
+				break
 			# Makes it so each microblock will contain transactions (waits for new microblock to be ready before continuing)
 			while self.Block.CheckMicroBlockStatus() != True:
+				#if self.Reset == True:
+				#	self.SetReset(False)
+				#	break
 				continue
 
 		self.ForwardSolvedBlockToMasterNodes()
+
+	def SetReset(self, reset):
+		self.Reset = reset
 
 	def SetMasterNode(self, masterNode):
 		'''

@@ -17,10 +17,33 @@ def SplitTransactions(transaction_pool):
 	return transaction_pool.Transactions[transactionStart:transactionEnd]
 
 
+def GenerateDistanceMatrix(numUsers):
+	distanceMatrix = [[0 for x in range(numUsers+1)] for y in range(numUsers+1)] 
+	for i in range(0,numUsers+1):
+		for j in range(0,numUsers+1):
+			if i == j:
+				distanceMatrix[i][j] = 0
+			else:
+				distanceMatrix[i][j] = random.randint(1,10)
+	return distanceMatrix
+
+def AllocateTransactionsByDistance(userID, transactionPool, distanceMatrix, distanceThreshold):
+	transactions = []
+	for transaction in transactionPool.Transactions:
+		if distanceMatrix[transaction.senderID][userID] <= distanceThreshold:
+			transactions.append(transaction)
+	return transactions
+
+
+
+
+
+
 NumberOfAccounts = 100
 MicroBlocksPerBlock = 3
 MaxTimePerMicroBlock = 3
 BlockIterations = 4
+distanceThreshold = 3
 
 # Create initial account list
 masterAccountList = AccountList()
@@ -54,6 +77,9 @@ for userID in range(0,NumberOfAccounts):
 	#newNode = Node(userID, copy.deepcopy(masterAccountList), copy.deepcopy(masterNodes), copy.deepcopy(transactionPool.Transactions))
 	nodes.append(newNode)
 
+
+DistanceMatrix = GenerateDistanceMatrix(NumberOfAccounts)
+#print(DistanceMatrix)
 
 # Tells each masternode what the other masternode objects are
 # Records the IDs of masternodes
@@ -114,16 +140,18 @@ for i in range(0,BlockIterations):
 
 	# Begins node processing transactions and inserting into blocks
 	for node in nodes:
-		splitTransactionPool = SplitTransactions(copy.deepcopy(transactionPool))
-		nodeThread = threading.Thread(target=node.BeginBlockBuilding, args=[copy.deepcopy(splitTransactionPool)])
+		distanceTransactions = AllocateTransactionsByDistance(node.userID, transactionPool, DistanceMatrix, distanceThreshold)
+		nodeThread = threading.Thread(target=node.BeginBlockBuilding, args=[distanceTransactions])
 		nodeThread.start()
 		nodeThreads.append(nodeThread)
 
 	# Joins all threads to get ready for next iteration
 	for nodeThread in nodeThreads:
 		nodeThread.join()
+	print("Joined all nodes")
 	for masterNodeThread in masterNodeThreads:
 		masterNodeThread.join()
+	print("Joined all threads")
 
 	print('\nStatistics:')
 	print('Total Bytes Received Per MasterNode: ' + str(masterNodes[0].TotalBytesReceived))
@@ -138,16 +166,16 @@ for i in range(0,BlockIterations):
 
 	masterAccountList.AccountList = copy.deepcopy(masterNodes[0].ModifiedMasterAccountList.AccountList)
 
-	'''processed = 0
+	processed = 0
 	unprocessed = 0
 
-	for processedTransaction in processedTransactions:
+	for processedTransaction in transactionPool.Transactions:
 		if processedTransaction.processed:
 			processed += 1
 		else:
 			unprocessed += 1
 	print("Total Processed Transactions: " + str(processed))
-	print("Total Unprocessed Transactions: " + str(unprocessed))'''
+	print("Total Unprocessed Transactions: " + str(unprocessed))
 
 
 	# Update each nodes account list
