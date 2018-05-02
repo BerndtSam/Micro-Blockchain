@@ -48,11 +48,11 @@ NumberOfAccounts = 100
 MicroBlocksPerBlock = 3
 MaxTimePerMicroBlock = 3
 BlockIterations = 5
-distanceThreshold = 4
-numberOfTransactionsPerIteration = 50
+DistanceThreshold = 4
+NumberOfTransactionsPerIteration = 50
 
-if numberOfTransactionsPerIteration > NumberOfAccounts:
-	assert(NumberOfAccounts >= numberOfTransactionsPerIteration)
+if NumberOfTransactionsPerIteration > NumberOfAccounts:
+	assert(NumberOfAccounts >= NumberOfTransactionsPerIteration)
 	print("Invalid number of transactions per iteration. The number of transactions must not exceed the number of accounts")
 
 # Create initial account list
@@ -128,7 +128,7 @@ for i in range(0,BlockIterations):
 	transactionPool.ReinitializeTransactionPool(copy.deepcopy(masterAccountList), UnprocessedTransactions)
 
 	# Generate valid transactions
-	transactionPool.GenerateValidTransactions(numberOfTransactionsPerIteration, UnprocessedTransactions)
+	transactionPool.GenerateValidTransactions(NumberOfTransactionsPerIteration, UnprocessedTransactions)
 
 	# TODO: Generate 1% invalid transactions
 	#transactionPool.GeneratePercentInvalidTransactions(.01)
@@ -147,7 +147,7 @@ for i in range(0,BlockIterations):
 
 	# Begins node processing transactions and inserting into blocks
 	for node in nodes:
-		distanceTransactions = AllocateTransactionsByDistance(node.userID, transactionPool, DistanceMatrix, distanceThreshold)
+		distanceTransactions = AllocateTransactionsByDistance(node.userID, transactionPool, DistanceMatrix, DistanceThreshold)
 		nodeThread = threading.Thread(target=node.BeginBlockBuilding, args=[distanceTransactions])
 		nodeThread.start()
 		nodeThreads.append(nodeThread)
