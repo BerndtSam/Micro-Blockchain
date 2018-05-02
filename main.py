@@ -25,6 +25,7 @@ def GenerateDistanceMatrix(numUsers):
 				distanceMatrix[i][j] = 0
 			else:
 				distanceMatrix[i][j] = random.randint(1,10)
+				distanceMatrix[j][i] = distanceMatrix[i][j]
 	return distanceMatrix
 
 def AllocateTransactionsByDistance(userID, transactionPool, distanceMatrix, distanceThreshold):
@@ -39,11 +40,16 @@ def AllocateTransactionsByDistance(userID, transactionPool, distanceMatrix, dist
 
 
 
-NumberOfAccounts = 100
+NumberOfAccounts = 50
 MicroBlocksPerBlock = 3
 MaxTimePerMicroBlock = 3
 BlockIterations = 4
 distanceThreshold = 3
+numberOfTransactionsPerIteration = 10
+
+if numberOfTransactionsPerIteration > NumberOfAccounts:
+	print("Invalid number of transactions per iteration. The number of transactions must not exceed the number of accounts")
+
 
 # Create initial account list
 masterAccountList = AccountList()
@@ -79,7 +85,7 @@ for userID in range(0,NumberOfAccounts):
 
 
 DistanceMatrix = GenerateDistanceMatrix(NumberOfAccounts)
-#print(DistanceMatrix)
+print(DistanceMatrix)
 
 # Tells each masternode what the other masternode objects are
 # Records the IDs of masternodes
@@ -117,14 +123,12 @@ for i in range(0,BlockIterations):
 	# Shuffles nodes to account for initialization time
 	random.shuffle(nodes)
 
-	# TODO: Update so the transaction splitting is based off of "location"
-
 	# Initialize TransactionPool
+	# TODO: If transactions dont get processed, have them stay for next iteration
 	transactionPool = TransactionPool(copy.deepcopy(masterAccountList))
 
-	# Generate 100 valid transactions
-	#transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
-	transactionPool.GenerateValidTransactions(math.floor(10))
+	# Generate valid transactions
+	transactionPool.GenerateValidTransactions(numberOfTransactionsPerIteration)
 	print('Transactions Generated')
 	for transaction in transactionPool.Transactions:
 		print('From: ' + str(transaction.senderID) + ' To: ' + str(transaction.receiverID) + ' Coins: ' + str(transaction.coins))

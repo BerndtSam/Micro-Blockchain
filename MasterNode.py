@@ -60,6 +60,7 @@ class MasterNode(Node):
 		'''
 		Gathers the masternode IDs so that they are not selected as future masternodes
 		'''
+		self.CurrentMasterNodeIDs = []
 		for masterNode in self.MasterNodes:
 			self.CurrentMasterNodeIDs.append(masterNode.userID)
 
@@ -85,6 +86,8 @@ class MasterNode(Node):
 			self.BytesMasterNodeSelection += sys.getsizeof(self.ReplacementMasterNode) + self.HTTPHeaderSize
 			if masterNode.CompareNewMasterNodes(self.ReplacementMasterNode) == False:
 				print("MasterNodeID: " + str(self.userID) + " has attempted to set a masternode which already has been chosen: " + str(self.ReplacementMasterNode))
+				print(self.CurrentMasterNodeIDs)
+				print(self.PreviousMasterNodeList)
 				MasterNodeExists = True
 				break
 
@@ -216,6 +219,7 @@ class MasterNode(Node):
 			originalAccountList: Original Account List to verify
 			modifiedAccountList: Modified Account List to verify
 		'''
+		#print('User sending block: ' + str(block.BlockID))
 		self.AddBlockLock.acquire()
 		self.BlocksToVerify.append(block)
 		self.OriginalAccountListsToVerify.append(originalAccountList)

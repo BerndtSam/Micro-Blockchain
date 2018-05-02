@@ -100,6 +100,9 @@ class Node:
 				break
 			# Makes it so each microblock will contain transactions (waits for new microblock to be ready before continuing)
 			while self.Block.CheckMicroBlockStatus() != True:
+				if self.Reset == True:
+					self.SetReset(False)
+					break
 				#if self.Reset == True:
 				#	self.SetReset(False)
 				#	break
@@ -156,5 +159,6 @@ class Node:
 	def ReinitializeNode(self):
 		self.TransactionPool = None
 		self.NextBlockReady = False
+		self.Reset = False
 
 
