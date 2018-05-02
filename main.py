@@ -88,7 +88,7 @@ for userID in range(0,NumberOfAccounts):
 
 
 DistanceMatrix = GenerateDistanceMatrix(NumberOfAccounts)
-print(DistanceMatrix)
+#print(DistanceMatrix)
 
 # Tells each masternode what the other masternode objects are
 # Records the IDs of masternodes
