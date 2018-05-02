@@ -11,9 +11,11 @@ Developed by Sam Berndt
 
 # Execute Program
 To execute the program, run the following command on the command line using Python 3.4 or later
+
 python main.py
 
 If you have multiple Python versions installed, you may need to try:
+
 python3 main.py
 
 
