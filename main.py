@@ -135,8 +135,6 @@ for i in range(0,BlockIterations):
 
 	# Renitialize TransactionPool
 	transactionPool.ReinitializeTransactionPool(copy.deepcopy(masterAccountList), UnprocessedTransactions)
-	# TODO: If transactions dont get processed, have them stay for next iteration
-
 
 	# Generate valid transactions
 	transactionPool.GenerateValidTransactions(numberOfTransactionsPerIteration, UnprocessedTransactions)
@@ -207,12 +205,6 @@ for i in range(0,BlockIterations):
 	for masterNode in masterNodes:
 		masterNode.ReinitializeMasterNode()
 
-
-
-
-
-# need to ensure that transactions that do get processed get removed from transaction
-# pool
 
 
 
