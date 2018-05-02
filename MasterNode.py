@@ -152,7 +152,7 @@ class MasterNode(Node):
 
 	def InitializeNewMasterNode(self):
 		'''
-		Initializes the new masternode after selection
+		Initializes the new masternode after selection, and relinquishes control to said MasterNode
 		'''
 		for node in self.Nodes:
 			# Sets this node to be a regular node again
@@ -182,7 +182,9 @@ class MasterNode(Node):
 
 
 	def ReinitializeMasterNode(self):
-		# Reinitialize this MasterNode's masternode class variables
+		'''
+		Reinitialize this MasterNode's masternode class variables
+		''' 
 		self.SelectedMasterNodes = []
 		self.ReplacementMasterNode = None
 		# Ensures the current masternodes can't submit a block
@@ -229,7 +231,6 @@ class MasterNode(Node):
 			originalAccountList: Original Account List to verify
 			modifiedAccountList: Modified Account List to verify
 		'''
-		#print('User sending block: ' + str(block.BlockID))
 		if self.CensusInitiated == False:
 			self.AddBlockLock.acquire()
 			#print('Node ' + str(block.BlockID) + ' has acquired addblocklock for masternode ' + str(self.userID))
@@ -275,9 +276,6 @@ class MasterNode(Node):
 		print('MasterNode ' + str(self.userID) + ' Verified Blocks' + str(verifiedBlockList))
 
 		self.CensusInitiated = True
-
-		# Need to increment the block count for blocks who solved
-
 
 		# Wait up for masternodes
 		for masterNode in self.MasterNodes:

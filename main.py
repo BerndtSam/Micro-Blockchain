@@ -59,16 +59,6 @@ masterAccountList = AccountList()
 masterAccountList.PopulateAccountList(NumberOfAccounts, rand=True)
 print(masterAccountList.AccountList)
 
-# Initialize TransactionPool
-#transactionPool = TransactionPool(masterAccountList)
-
-# Generate 100 valid transactions
-#transactionPool.GenerateValidTransactions(math.floor(NumberOfAccounts/2))
-#print('Transactions Generated')
-
-# Generate 1% invalid transactions
-#transactionPool.GeneratePercentInvalidTransactions(.05)
-
 # List of Masternodes
 masterNodes = []
 for masterNodeID in range(0,int(math.floor(NumberOfAccounts/10))):
@@ -138,6 +128,9 @@ for i in range(0,BlockIterations):
 
 	# Generate valid transactions
 	transactionPool.GenerateValidTransactions(numberOfTransactionsPerIteration, UnprocessedTransactions)
+
+	# TODO: Generate 1% invalid transactions
+	#transactionPool.GeneratePercentInvalidTransactions(.01)
 	print('Transactions Generated')
 	for transaction in transactionPool.Transactions:
 		print('From: ' + str(transaction.senderID) + ' To: ' + str(transaction.receiverID) + ' Coins: ' + str(transaction.coins))
@@ -197,11 +190,12 @@ for i in range(0,BlockIterations):
 
 
 	# Update each nodes account list
+	# Reinitialize all nodes
 	for node in nodes:
 		node.OriginalAccountList.AccountList = copy.deepcopy(masterAccountList.AccountList)
 		node.ModifiedAccountList.AccountList = copy.deepcopy(masterAccountList.AccountList)
 		node.ReinitializeNode()
-
+	# Reinitialize all MasterNodes
 	for masterNode in masterNodes:
 		masterNode.ReinitializeMasterNode()
 

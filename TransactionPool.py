@@ -4,9 +4,6 @@ from Transaction import Transaction
 import math
 
 class TransactionPool:
-	''' 
-	Nothing in this file has been tested
-	'''
 	def __init__(self, accountList):
 		# List of Transactions (the transaction pool itself)
 		self.Transactions = []
@@ -119,6 +116,7 @@ class TransactionPool:
 		Input: 
 			percent: Percentage of valid transactions to be invalid transactions. Initially set to 5%
 		'''
+		# TODO: Integrate this into the main program
 
 		# Generate some number of transactions proportional to a percentage of the 
 		# current transactions
@@ -155,6 +153,9 @@ class TransactionPool:
 	def ReinitializeTransactionPool(self, accountList, rolloverTransactions):
 		'''
 		Used to reinitialize the transaction pool for the next iteration
+		Input:
+			accountList: Account list to generate transactions from
+			rolloverTransactions: Transactions that were not processed in the last iteration
 		'''
 		# List of Transactions (the transaction pool itself)
 		self.Transactions = rolloverTransactions

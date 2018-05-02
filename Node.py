@@ -24,7 +24,11 @@ class Node:
 
 
 	def BeginBlockBuilding(self, transactionPool):
-
+		'''
+		Beginning of threaded process to process transactions and build blocks
+		Input:
+			transactionPool: Pool of transactions that are sent from nodes within the distance threshold
+		'''
 		self.TransactionPool = transactionPool
 		if self.MasterNode == True:
 			return
@@ -108,6 +112,9 @@ class Node:
 		self.ForwardSolvedBlockToMasterNodes()
 
 	def SetReset(self, reset):
+		'''
+		Used to set the reset variable which helps prevent blocking
+		'''
 		self.Reset = reset
 
 	def SetMasterNode(self, masterNode):

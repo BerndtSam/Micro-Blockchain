@@ -71,7 +71,7 @@ class AccountList:
 
 	def AddBlock(self, address):
 		'''
-		Adds block to NumberOfBlocks solved to address
+		Increments block count for node that solves block
 		Input:
 			address: Address of user to add a solved block to
 		'''
