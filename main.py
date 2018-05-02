@@ -52,6 +52,7 @@ distanceThreshold = 4
 numberOfTransactionsPerIteration = 50
 
 if numberOfTransactionsPerIteration > NumberOfAccounts:
+	assert(NumberOfAccounts >= numberOfTransactionsPerIteration)
 	print("Invalid number of transactions per iteration. The number of transactions must not exceed the number of accounts")
 
 # Create initial account list
