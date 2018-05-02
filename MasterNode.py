@@ -234,8 +234,8 @@ class MasterNode(Node):
 			self.AddBlockLock.acquire()
 			#print('Node ' + str(block.BlockID) + ' has acquired addblocklock for masternode ' + str(self.userID))
 			if self.CensusInitiated:
-				self.AddBlockLock.release()
 				#print('Node ' + str(block.BlockID) + ' has released addblocklock for masternode: ' + str(self.userID))
+				self.AddBlockLock.release()
 				return
 			self.BlocksToVerify.append(block)
 			self.OriginalAccountListsToVerify.append(originalAccountList)

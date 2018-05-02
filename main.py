@@ -41,7 +41,7 @@ def AllocateTransactionsByDistance(userID, transactionPool, distanceMatrix, dist
 
 
 NumberOfAccounts = 100
-MicroBlocksPerBlock = 3
+MicroBlocksPerBlock = 5
 MaxTimePerMicroBlock = 2
 BlockIterations = 4
 distanceThreshold = 3
@@ -67,7 +67,7 @@ print(masterAccountList.AccountList)
 
 # List of Masternodes
 masterNodes = []
-for masterNodeID in range(0,math.floor(NumberOfAccounts/10)):
+for masterNodeID in range(0,int(math.floor(NumberOfAccounts/10))):
 	tempTransactions = []
 	nodeBlocksSolved = masterAccountList.AccountList[masterNodeID]['NumberOfBlocksSolved']
 	tempMasterNode = MasterNode(masterNodeID, copy.deepcopy(masterAccountList), nodeBlocksSolved, MicroBlocksPerBlock, MaxTimePerMicroBlock, transactionPool=[], previousMasterNodeList=[])
@@ -156,13 +156,15 @@ for i in range(0,BlockIterations):
 		nodeThread.start()
 		nodeThreads.append(nodeThread)
 
+
 	# Joins all threads to get ready for next iteration
 	for nodeThread in nodeThreads:
 		nodeThread.join()
-	print("Joined all nodes")
+	print("Joined all node threads")
 	for masterNodeThread in masterNodeThreads:
 		masterNodeThread.join()
-	print("Joined all threads")
+	print("Joined all masternode threads")
+	
 
 	print('\nStatistics:')
 	print('Total Bytes Received Per MasterNode: ' + str(masterNodes[0].TotalBytesReceived))
