@@ -40,16 +40,15 @@ def AllocateTransactionsByDistance(userID, transactionPool, distanceMatrix, dist
 
 
 
-NumberOfAccounts = 50
+NumberOfAccounts = 100
 MicroBlocksPerBlock = 3
-MaxTimePerMicroBlock = 3
+MaxTimePerMicroBlock = 2
 BlockIterations = 4
 distanceThreshold = 3
-numberOfTransactionsPerIteration = 10
+numberOfTransactionsPerIteration = 50
 
 if numberOfTransactionsPerIteration > NumberOfAccounts:
 	print("Invalid number of transactions per iteration. The number of transactions must not exceed the number of accounts")
-
 
 # Create initial account list
 masterAccountList = AccountList()
@@ -109,6 +108,13 @@ for node in nodes:
 for masterNode in masterNodes:
 	masterNode.SetNodes(nodes)
 
+# Roll over transactions from previous iteration
+UnprocessedTransactions = []
+
+# Initialize TransactionPool
+transactionPool = TransactionPool(copy.deepcopy(masterAccountList))
+
+
 
 # Main Program Loop
 for i in range(0,BlockIterations):
@@ -123,12 +129,13 @@ for i in range(0,BlockIterations):
 	# Shuffles nodes to account for initialization time
 	random.shuffle(nodes)
 
-	# Initialize TransactionPool
+	# Renitialize TransactionPool
+	transactionPool.ReinitializeTransactionPool(copy.deepcopy(masterAccountList), UnprocessedTransactions)
 	# TODO: If transactions dont get processed, have them stay for next iteration
-	transactionPool = TransactionPool(copy.deepcopy(masterAccountList))
+
 
 	# Generate valid transactions
-	transactionPool.GenerateValidTransactions(numberOfTransactionsPerIteration)
+	transactionPool.GenerateValidTransactions(numberOfTransactionsPerIteration, UnprocessedTransactions)
 	print('Transactions Generated')
 	for transaction in transactionPool.Transactions:
 		print('From: ' + str(transaction.senderID) + ' To: ' + str(transaction.receiverID) + ' Coins: ' + str(transaction.coins))
@@ -168,18 +175,21 @@ for i in range(0,BlockIterations):
 	print('Bytes to Finalize Account List: ' + str(masterNodes[0].BytesFinalizingAccountLists))
 	print('Bytes to Initialize new MasterNodes: ' + str(masterNodes[0].BytesMasterNodeSelection))
 
-	masterAccountList.AccountList = copy.deepcopy(masterNodes[0].ModifiedMasterAccountList.AccountList)
-
 	processed = 0
 	unprocessed = 0
-
-	for processedTransaction in transactionPool.Transactions:
-		if processedTransaction.processed:
+	UnprocessedTransactions = []
+	for transaction in transactionPool.Transactions:
+		if transaction.processed:
 			processed += 1
 		else:
 			unprocessed += 1
+			UnprocessedTransactions.append(transaction)
 	print("Total Processed Transactions: " + str(processed))
 	print("Total Unprocessed Transactions: " + str(unprocessed))
+	print('Unprocessed Transactions: ' + str(UnprocessedTransactions))
+
+
+	masterAccountList.AccountList = copy.deepcopy(masterNodes[0].ModifiedMasterAccountList.AccountList)
 
 
 	# Update each nodes account list

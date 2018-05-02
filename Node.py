@@ -103,9 +103,6 @@ class Node:
 				if self.Reset == True:
 					self.SetReset(False)
 					break
-				#if self.Reset == True:
-				#	self.SetReset(False)
-				#	break
 				continue
 
 		self.ForwardSolvedBlockToMasterNodes()
@@ -157,8 +154,10 @@ class Node:
 				masterNode.ReceiveIncomingBlocks(self.Block, self.OriginalAccountList, self.ModifiedAccountList)
 
 	def ReinitializeNode(self):
+		'''
+		Reinitializes node variables for next iteration
+		'''
 		self.TransactionPool = None
 		self.NextBlockReady = False
 		self.Reset = False
-
 

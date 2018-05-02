@@ -38,34 +38,37 @@ class TransactionPool:
 			newTransaction = Transaction(coins, fromUser, toUser)
 			self.Transactions.append(newTransaction)
 
-	def ValidFromUser(self, availableFromUsers):
+	def ValidFromUser(self, availableFromUsers, previousTransactionList):
 		'''
 		Generates a valid from user for a transaction.
 		Valid is defined as not having already been in a transaction this block
 		and not having an empty account
 		Input:
 			availableFromUsers: Accounts who have not been in a transaction this block
+			previousTransactionList: List of unprocessed transactions to account for in this grouping
 		Output:
 			validUser: Valid user ID for from transaction
 		'''
 		validUser = False
+		previousTransactions = [transaction.senderID for transaction in previousTransactionList]
 
 		while validUser != True:
 			# Randomly select a user from list of availableUsers
 			fromUser = availableFromUsers[random.randrange(0, len(availableFromUsers))]
 
-			if not self.originalAccountList.AccountIsEmpty(fromUser):
+			if not self.originalAccountList.AccountIsEmpty(fromUser) and fromUser not in previousTransactions:
 				validUser = True
 
 		return fromUser
 
 
-	def GenerateValidTransactions(self, numberOfTransactions):
+	def GenerateValidTransactions(self, numberOfTransactions, previousTransactionList):
 		'''
 		Generates a set of valid ordered transactions, appends to self.Transactions.
 		Does not allow more than one transaction per block
 		Input:
 			numberOfTransactions: Number of valid transactions to generate
+			previousTransactionList: List of unprocessed transactions to account for in this grouping
 		'''
 		print('Generating valid Transactions')
 		availableFromUsers = [user for user in range(0,self.numberOfUsers)]
@@ -73,7 +76,7 @@ class TransactionPool:
 		for i in range(0, numberOfTransactions):
 			# Generate a valid from user who has not been in a transaction this block
 			# and whose account is not empty
-			fromUser = self.ValidFromUser(availableFromUsers)
+			fromUser = self.ValidFromUser(availableFromUsers, previousTransactionList)
 			availableFromUsers.remove(fromUser)
 			
 			# Determines the max amount a user can send
@@ -149,5 +152,16 @@ class TransactionPool:
 			# Adds invalid transaction to transaction list
 			self.Transactions.append(newTransaction)
 
-
+	def ReinitializeTransactionPool(self, accountList, rolloverTransactions):
+		'''
+		Used to reinitialize the transaction pool for the next iteration
+		'''
+		# List of Transactions (the transaction pool itself)
+		self.Transactions = rolloverTransactions
+		# Deep copy of the account list to determine what the outcomes will be
+		# without applying it to the actual account list
+		self.modifiedAccountList = copy.deepcopy(accountList)
+		# Deep copy of the account list to maintain the original balance for 
+		# valid transactions
+		self.originalAccountList = copy.deepcopy(accountList)
 

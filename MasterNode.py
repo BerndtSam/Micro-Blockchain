@@ -86,8 +86,8 @@ class MasterNode(Node):
 			self.BytesMasterNodeSelection += sys.getsizeof(self.ReplacementMasterNode) + self.HTTPHeaderSize
 			if masterNode.CompareNewMasterNodes(self.ReplacementMasterNode) == False:
 				print("MasterNodeID: " + str(self.userID) + " has attempted to set a masternode which already has been chosen: " + str(self.ReplacementMasterNode))
-				print(self.CurrentMasterNodeIDs)
-				print(self.PreviousMasterNodeList)
+				print("Current MasterNodes: " + str(self.CurrentMasterNodeIDs))
+				print("Previous MasterNodes: " + str(self.PreviousMasterNodeList))
 				MasterNodeExists = True
 				break
 
@@ -209,6 +209,16 @@ class MasterNode(Node):
 
 		self.ProcessedTransactions = []
 
+		self.BytesPerBlockTransaction = 0
+		self.BytesPerMasterNodeBlockVerification = 0
+		self.BytesPerCensusVerification = 0
+		self.BytesFinalizingAccountLists = 0
+		self.BytesComparingCensus = 0
+		self.BytesFinalizingAccountListTransmission = 0
+		self.BytesMasterNodeSelection = 0
+		self.TotalBytesSent = 0
+		self.TotalBytesReceived = 0
+
 
 	def ReceiveIncomingBlocks(self, block, originalAccountList, modifiedAccountList):
 		'''
@@ -220,13 +230,21 @@ class MasterNode(Node):
 			modifiedAccountList: Modified Account List to verify
 		'''
 		#print('User sending block: ' + str(block.BlockID))
-		self.AddBlockLock.acquire()
-		self.BlocksToVerify.append(block)
-		self.OriginalAccountListsToVerify.append(originalAccountList)
-		self.ModifiedAccountListsToVerify.append(modifiedAccountList)
-		self.BytesPerBlockTransaction = sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(self.BlocksToVerify[0].MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList) + self.HTTPHeaderSize
-		self.TotalBytesReceived += sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(self.BlocksToVerify[0].MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList) + self.HTTPHeaderSize
-		self.AddBlockLock.release()
+		if self.CensusInitiated == False:
+			self.AddBlockLock.acquire()
+			#print('Node ' + str(block.BlockID) + ' has acquired addblocklock for masternode ' + str(self.userID))
+			if self.CensusInitiated:
+				self.AddBlockLock.release()
+				#print('Node ' + str(block.BlockID) + ' has released addblocklock for masternode: ' + str(self.userID))
+				return
+			self.BlocksToVerify.append(block)
+			self.OriginalAccountListsToVerify.append(originalAccountList)
+			self.ModifiedAccountListsToVerify.append(modifiedAccountList)
+			self.BytesPerBlockTransaction = sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(self.BlocksToVerify[0].MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList) + self.HTTPHeaderSize
+			self.TotalBytesReceived += sys.getsizeof(block) + sys.getsizeof(block.MicroBlocks) + len(self.BlocksToVerify[0].MicroBlocks)*sys.getsizeof(block.MicroBlocks[0].TransactionList) + sys.getsizeof(originalAccountList) + sys.getsizeof(originalAccountList.AccountList) + sys.getsizeof(modifiedAccountList) + sys.getsizeof(modifiedAccountList.AccountList) + self.HTTPHeaderSize
+			#print('Node ' + str(block.BlockID) + ' has released addblocklock for masternode: ' + str(self.userID))
+			self.AddBlockLock.release()
+			return
 
 
 	def ProcessIncomingBlocks(self):
@@ -534,6 +552,3 @@ class MasterNode(Node):
 		print('Account List Verified for Masternode ' + str(self.userID))
 		Timer(10, self.MasternodeSelection())
 		#self.MasternodeSelection()
-
-	# Quorum proceedure for accountlist ot define master accountlist
-
