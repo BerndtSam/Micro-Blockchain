@@ -10,14 +10,10 @@ import copy
 import random
 import math
 
-def SplitTransactions(transaction_pool):
-	randomInt = random.randint(0,2)/3
-	transactionStart = math.floor(randomInt * len(transaction_pool.Transactions))
-	transactionEnd = math.floor(randomInt+1 * len(transaction_pool.Transactions))
-	return transaction_pool.Transactions[transactionStart:transactionEnd]
-
-
 def GenerateDistanceMatrix(numUsers):
+	''' 
+	Generates a distance matrix indicating the physical latency between nodes
+	'''
 	distanceMatrix = [[0 for x in range(numUsers+1)] for y in range(numUsers+1)] 
 	for i in range(0,numUsers+1):
 		for j in range(0,numUsers+1):
@@ -29,6 +25,17 @@ def GenerateDistanceMatrix(numUsers):
 	return distanceMatrix
 
 def AllocateTransactionsByDistance(userID, transactionPool, distanceMatrix, distanceThreshold):
+	'''
+	Allocates the transactions given a transaction pool to a given node based off of the distance threshold and distance
+	between nodes
+	Input:
+		userID: Node to allocate transactions for
+		transactionPool: All transactions
+		distanceMatrix: Distance between each of the nodes
+		distanceThreshold: Maximum distance a transaction can travel in terms of nodes
+	Output:
+		transactions: Transactions for a node by filtering via distance matrix
+	'''
 	transactions = []
 	for transaction in transactionPool.Transactions:
 		if distanceMatrix[transaction.senderID][userID] <= distanceThreshold:
@@ -37,14 +44,11 @@ def AllocateTransactionsByDistance(userID, transactionPool, distanceMatrix, dist
 
 
 
-
-
-
 NumberOfAccounts = 100
-MicroBlocksPerBlock = 5
-MaxTimePerMicroBlock = 2
-BlockIterations = 4
-distanceThreshold = 3
+MicroBlocksPerBlock = 3
+MaxTimePerMicroBlock = 3
+BlockIterations = 5
+distanceThreshold = 4
 numberOfTransactionsPerIteration = 50
 
 if numberOfTransactionsPerIteration > NumberOfAccounts:
