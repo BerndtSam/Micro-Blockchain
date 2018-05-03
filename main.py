@@ -5,6 +5,7 @@ from MasterNode import MasterNode
 from threading import Timer
 from Block import Block
 import threading
+import time
 
 import copy
 import random
@@ -45,11 +46,12 @@ def AllocateTransactionsByDistance(userID, transactionPool, distanceMatrix, dist
 
 
 NumberOfAccounts = 100
-MicroBlocksPerBlock = 3
+MicroBlocksPerBlock = 5
 MaxTimePerMicroBlock = 3
-BlockIterations = 5
+BlockIterations = 10
 DistanceThreshold = 4
 NumberOfTransactionsPerIteration = 50
+NumberOfMasterNodes = 10
 
 if NumberOfTransactionsPerIteration > NumberOfAccounts:
 	assert(NumberOfAccounts >= NumberOfTransactionsPerIteration)
@@ -62,7 +64,7 @@ print(masterAccountList.AccountList)
 
 # List of Masternodes
 masterNodes = []
-for masterNodeID in range(0,int(math.floor(NumberOfAccounts/10))):
+for masterNodeID in range(0,NumberOfMasterNodes):
 	tempTransactions = []
 	nodeBlocksSolved = masterAccountList.AccountList[masterNodeID]['NumberOfBlocksSolved']
 	tempMasterNode = MasterNode(masterNodeID, copy.deepcopy(masterAccountList), nodeBlocksSolved, MicroBlocksPerBlock, MaxTimePerMicroBlock, transactionPool=[], previousMasterNodeList=[])
@@ -109,10 +111,17 @@ UnprocessedTransactions = []
 # Initialize TransactionPool
 transactionPool = TransactionPool(copy.deepcopy(masterAccountList))
 
-
+sentOverheadInfo = []
+receivedOverheadInfo = []
+TransactionsProcessedInfo = []
+TransactionsUnprocessedInfo = []
+TimeInfo = []
 
 # Main Program Loop
 for i in range(0,BlockIterations):
+	beginTime = time.time()
+	print('Iteration: ' + str(i))
+
 	median = masterAccountList.MedianBlocksSolved()
 	print('Median Blocks Solved: ' + str(masterAccountList.MedianBlocksSolved()))
 	eligibleMasterNodes = [node for node in masterAccountList.AccountList if masterAccountList.AccountList[node]['NumberOfBlocksSolved'] > median] 
@@ -155,16 +164,24 @@ for i in range(0,BlockIterations):
 
 	# Joins all threads to get ready for next iteration
 	for nodeThread in nodeThreads:
-		nodeThread.join()
+		nodeThread.join(3)
 	print("Joined all node threads")
 	for masterNodeThread in masterNodeThreads:
 		masterNodeThread.join()
 	print("Joined all masternode threads")
 	
 
+	AverageMasterNodeOverheadSent = 0
+	AverageMasterNodeOverheadReceived = 0
+	for masterNode in masterNodes:
+		AverageMasterNodeOverheadSent += masterNode.TotalBytesSent
+		AverageMasterNodeOverheadReceived += masterNode.TotalBytesReceived
+	AverageMasterNodeOverheadReceived = AverageMasterNodeOverheadReceived / len(masterNodes)
+	AverageMasterNodeOverheadSent = AverageMasterNodeOverheadSent / len(masterNodes)
+
 	print('\nStatistics:')
-	print('Total Bytes Received Per MasterNode: ' + str(masterNodes[0].TotalBytesReceived))
-	print('Total Bytes Sent Per MasterNode: ' + str(masterNodes[0].TotalBytesSent))
+	print('Average Bytes Received Per MasterNode: ' + str(masterNodes[0].TotalBytesReceived))
+	print('Average Bytes Sent Per MasterNode: ' + str(masterNodes[0].TotalBytesSent))
 	print('Bytes Per Block Transmission from Node: ' + str(masterNodes[0].BytesPerBlockTransaction))
 	print('Bytes Per Masternode Block Verification Transmission: ' + str(masterNodes[0].BytesPerMasterNodeBlockVerification))
 	print('Bytes Per Census Verification Transmission: ' + str(masterNodes[0].BytesPerCensusVerification))
@@ -186,6 +203,12 @@ for i in range(0,BlockIterations):
 	print("Total Unprocessed Transactions: " + str(unprocessed))
 	print('Unprocessed Transactions: ' + str(UnprocessedTransactions))
 
+	sentOverheadInfo.append(AverageMasterNodeOverheadSent)
+	receivedOverheadInfo.append(AverageMasterNodeOverheadReceived)
+	TransactionsProcessedInfo.append(processed)
+	TransactionsUnprocessedInfo.append(unprocessed)
+	TimeInfo.append(time.time() - beginTime)
+
 
 	masterAccountList.AccountList = copy.deepcopy(masterNodes[0].ModifiedMasterAccountList.AccountList)
 
@@ -200,6 +223,9 @@ for i in range(0,BlockIterations):
 	for masterNode in masterNodes:
 		masterNode.ReinitializeMasterNode()
 
-
-
+print('Sent Overhead ' + str(sentOverheadInfo))
+print('Received Overhead ' + str(receivedOverheadInfo))
+print('Processed Transactions ' + str(TransactionsProcessedInfo))
+print('Unprocessed Transactions ' + str(TransactionsUnprocessedInfo))
+print('Time per Iteration ' + str(TimeInfo))
 
